@@ -47,6 +47,10 @@ main{flex:1;overflow-y:auto;padding:1rem .9rem 1.5rem;overscroll-behavior:contai
 .who{font-weight:600;font-size:.92rem;color:hsl(var(--h) 45% var(--who-l))}
 .say{font-family:var(--serif);font-size:1.07rem;line-height:1.6}
 .you{margin:1.1rem 0 1.1rem auto;width:fit-content;max-width:88%;background:var(--player);padding:.6rem .85rem;border-radius:14px 14px 4px 14px;white-space:pre-wrap;overflow-wrap:anywhere}
+.narr em,.say em,.you em{color:var(--muted);font-style:italic}
+.altnav{display:flex;gap:.5rem;align-items:center;font-size:.85rem;color:var(--muted);margin:-.3rem 0 1rem}
+.altnav button{background:transparent;border:1px solid var(--line);border-radius:999px;width:1.7rem;height:1.7rem;display:grid;place-items:center;cursor:pointer;color:var(--ink)}
+.altnav button:disabled{opacity:.35}
 .divider{display:flex;align-items:center;gap:.8rem;color:var(--muted);font-size:.88rem;margin:1.6rem 0}
 .divider::before,.divider::after{content:"";flex:1;border-top:1px solid var(--line)}
 .err{margin:1rem 0;padding:.7rem .85rem;border:1px solid var(--danger);border-radius:10px;color:var(--danger)}
@@ -1053,7 +1057,7 @@ const PRESETS = {
 
 const GLOBAL_KEYS = ['apiKey', 'model', 'provider', 'keys', 'models', 'theme', 'oled', 'gore', 'emo', 'len', 'ctx', 'usage', 'think', 'lastBackup', 'temperature', 'lang', 'tone', 'kbOverride'];
 const uid = () => 's' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
-const newScenario = (over = {}) => ({ id: uid(), name: 'Nowy scenariusz', playerName: '', backstory: '', opening: '', notes: '', kind: 'from', point: 2, time: 'day', location: '', present: [], focus: '', charName: '', charDesc: '', world: '', others: [], messages: [], summary: '', summaryUpTo: 0, journal: [], pins: [], memAt: 0, memUndo: null, created: Date.now(), updated: Date.now(), ...over });
+const newScenario = (over = {}) => ({ id: uid(), name: 'Nowy scenariusz', playerName: '', backstory: '', opening: '', notes: '', kind: 'from', point: 2, time: 'day', location: '', present: [], focus: '', charName: '', charDesc: '', world: '', others: [], messages: [], summary: '', summaryUpTo: 0, journal: [], pins: [], memAt: 0, memUndo: null, deadNow: [], created: Date.now(), updated: Date.now(), ...over });
 const fromPreset = k => { const p = PRESETS[k]; return newScenario({ name: p.name, backstory: p.backstory, opening: p.opening, notes: p.notes, point: p.point, time: p.time, location: p.location, present: p.present.slice(), focus: p.focus }); };
 
 let G = { ver: 3, apiKey: '', model: 'gemini-3.5-flash-lite', provider: 'gemini', keys: null, models: null, theme: 'auto', oled: false, gore: 'medium', emo: 'expressive', len: 'medium', ctx: 'auto', usage: { day: '', n: 0, left: null }, think: 'auto', lastBackup: 0, temperature: 0.85, lang: 'en', tone: 'natural', kbOverride: null, activeId: null };
@@ -1158,20 +1162,38 @@ function renderLog() {
     if (m.hidden && !m.divider) return;
     if (m.divider) { const d = document.createElement('div'); d.className = 'divider'; d.textContent = m.divider; log.appendChild(d); return; }
     const d = document.createElement('div');
-    if (m.role === 'user') { d.className = 'you'; d.textContent = m.text; } else d.innerHTML = messageHTML(m.text);
+    if (m.role === 'user') { d.className = 'you'; d.innerHTML = renderInline(m.text); } else d.innerHTML = messageHTML(m.text);
     d.onclick = e => { if (e.target.closest('a,button')) return; const nx = d.nextElementSibling, had = nx && nx.classList.contains('acts'); document.querySelectorAll('.acts').forEach(x => x.remove()); if (!had) d.after(msgActs(m, i)); };
     log.appendChild(d);
+    if (m.role === 'model' && i === S.messages.length - 1 && m.alts && m.alts.length > 1) log.appendChild(altNav(m));
   });
   updateButtons(); toBottom();
 }
 
+function altNav(m) {
+  const r = document.createElement('div'); r.className = 'altnav';
+  const prev = document.createElement('button'); prev.textContent = '‹'; prev.setAttribute('aria-label', 'Poprzednia wersja');
+  const idx = document.createElement('span'); idx.textContent = `${m.altIdx + 1}/${m.alts.length}`;
+  const next = document.createElement('button'); next.textContent = '›'; next.setAttribute('aria-label', 'Następna wersja');
+  prev.disabled = m.altIdx <= 0; next.disabled = m.altIdx >= m.alts.length - 1;
+  prev.onclick = () => { if (m.altIdx > 0) { m.altIdx--; m.text = m.alts[m.altIdx]; save(); renderLog(); } };
+  next.onclick = () => { if (m.altIdx < m.alts.length - 1) { m.altIdx++; m.text = m.alts[m.altIdx]; save(); renderLog(); } };
+  r.append(prev, idx, next);
+  return r;
+}
 function msgActs(m, i) {
   const r = document.createElement('div'); r.className = 'acts';
   const add = (t, f) => { const b = document.createElement('button'); b.className = 'btn ghost'; b.textContent = t; b.onclick = e => { e.stopPropagation(); f(); }; r.appendChild(b); };
   add('Kopiuj', () => navigator.clipboard.writeText(m.text).then(() => toast('Skopiowano.', 'ok'), () => toast('Nie udało się skopiować.', 'err')));
   if (busy) return r;
   if (m.role === 'user') add('Edytuj', () => { const t = prompt('Popraw wiadomość:', m.text); if (t != null && t.trim()) { m.text = t.trim(); save(); renderLog(); toast('Wiadomość poprawiona.', 'ok'); } });
-  else add('To błędne', () => { const t = prompt('Co jest nie tak i jak jest naprawdę? To trafi do przypiętych faktów.'); if (t && t.trim()) { S.pins = [...(S.pins || []), t.trim()]; save(); toast('Dodano do przypiętych faktów. Model użyje tego od następnej odpowiedzi.', 'ok'); } });
+  else {
+    add('Edytuj', () => {
+      const t = prompt('Popraw odpowiedź:', m.text);
+      if (t != null && t.trim()) { m.text = t.trim(); if (m.alts && m.altIdx != null) m.alts[m.altIdx] = m.text; save(); renderLog(); toast('Odpowiedź poprawiona.', 'ok'); }
+    });
+    add('To błędne', () => { const t = prompt('Co jest nie tak i jak jest naprawdę? To trafi do przypiętych faktów.'); if (t && t.trim()) { S.pins = [...(S.pins || []), t.trim()]; save(); toast('Dodano do przypiętych faktów. Model użyje tego od następnej odpowiedzi.', 'ok'); } });
+  }
   add('Usuń', () => { if (!confirm('Usunąć tę wiadomość?')) return; S.messages.splice(i, 1); if (i < (S.memAt || 0)) S.memAt--; if (i < S.summaryUpTo) S.summaryUpTo--; save(); renderLog(); toast('Wiadomość usunięta.', 'ok'); });
   return r;
 }
@@ -1321,16 +1343,24 @@ function undo() {
 }
 function redo() {
   if (busy || !S.messages.length) return;
+  let carry = null;
+  const last = S.messages[S.messages.length - 1];
+  if (last && last.role === 'model') carry = (last.alts && last.alts.length ? last.alts.slice() : [last.text]);
   while (S.messages.length && S.messages[S.messages.length - 1].role === 'model') S.messages.pop();
   S.summaryUpTo = Math.min(S.summaryUpTo, S.messages.length); S.memAt = Math.min(S.memAt || 0, S.messages.length); S.journal = (S.journal || []).filter(j => j.at <= S.messages.length);
-  save(); renderLog(); generate();
+  save(); renderLog();
+  generate().then(() => {
+    if (!carry) return;
+    const nm = S.messages[S.messages.length - 1];
+    if (nm && nm.role === 'model') { nm.alts = carry.concat([nm.text]); nm.altIdx = nm.alts.length - 1; save(); renderLog(); }
+  });
 }
 
 /* ================= MEMORY (event journal + world state) ================= */
 const MEM_EVERY = 4;
 let memBusy = false, memSkip = 0, memErr = '';
-const MEM_F = { location: ['Location and time', 'where and when the scene is now'], player: ['Player', 'condition, items, injuries'], alive: ['Alive, dead or missing', 'status of every named character'], objects: ['Bodies and objects', 'where important bodies and objects are NOW'], knows: ['Who knows what', 'per character, including who does NOT yet know something important'], trust: ['Trust toward the player', 'per character'], threads: ['Promises and open threads', 'what was promised or is unresolved'], canon: ['Notable changes from the starting setup', 'what has diverged from the original character, world or series canon description'] };
-const MEM_SCHEMA = { type: 'OBJECT', properties: { events: { type: 'ARRAY', items: { type: 'STRING' } }, ...Object.fromEntries(Object.keys(MEM_F).map(k => [k, { type: 'STRING' }])) }, required: ['events', ...Object.keys(MEM_F)] };
+const MEM_F = { alive: ['Alive, dead or missing', 'status of every named character'], knows: ['Who knows what', 'per character, including who does NOT yet know something important'], mood: ['Mood per character', 'a short current emotional state for each named character present, carried over between turns'], location: ['Location and time', 'where and when the scene is now'], player: ['Player', 'condition, items, injuries'], objects: ['Bodies and objects', 'where important bodies and objects are NOW'], trust: ['Trust toward the player', 'per character'], threads: ['Promises and open threads', 'what was promised or is unresolved'], canon: ['Notable changes from the starting setup', 'what has diverged from the original character, world or series canon description'] };
+const MEM_SCHEMA = { type: 'OBJECT', properties: { events: { type: 'ARRAY', items: { type: 'STRING' } }, presentNow: { type: 'ARRAY', items: { type: 'STRING' } }, locationNow: { type: 'STRING' }, deadNow: { type: 'ARRAY', items: { type: 'STRING' } }, ...Object.fromEntries(Object.keys(MEM_F).map(k => [k, { type: 'STRING' }])) }, required: ['events', 'presentNow', 'locationNow', 'deadNow', ...Object.keys(MEM_F)] };
 const updateMemChip = () => {
   const b = $('#memBtn'); if (!b) return; const lag = S.messages.length - (S.memAt || 0), warn = S.messages.length > 0 && lag > 8;
   b.textContent = 'Pamięć · ' + (S.journal || []).length + (warn ? ' ⚠' : ''); b.classList.toggle('warn', warn);
@@ -1344,18 +1374,25 @@ async function updateMemory(force) {
   memBusy = true;
   try {
     const transcript = chunk.map(m => m.divider ? `[--- ${m.divider} ---]` : (m.role === 'user' ? (m.hidden ? '[GM note] ' : 'PLAYER: ') : 'GM: ') + m.text).join('\n\n').slice(-30000);
-    const sys = 'You maintain the memory of an interactive text roleplay' + (sc.kind === 'custom' ? '' : ' set in the TV series FROM') + '. Given the CURRENT WORLD STATE, PINNED FACTS and NEW EVENTS, return JSON with "events": 2-6 short concrete facts from the new events (who did, said or promised what, discoveries, deaths, injuries, moves, objects), written in ' + (S.lang === 'pl' ? 'Polish' : 'English') + ', and these string fields, each a compact updated summary of the WHOLE story so far (keep what is still true, update what changed, never invent; use "none" if empty): ' + Object.entries(MEM_F).map(([k, v]) => `"${k}" = ${v[0]}: ${v[1]}`).join('; ') + '.';
-    const prompt = `CURRENT WORLD STATE:\n${sc.summary || '(empty)'}\n\nPINNED FACTS:\n${(sc.pins || []).join('\n') || '(none)'}\n\nNEW EVENTS:\n${transcript}`;
+    const registry = charsForKind(sc);
+    const sys = 'You maintain the memory of an interactive text roleplay' + (sc.kind === 'custom' ? '' : ' set in the TV series FROM') + '. Given the KNOWN CHARACTERS, CURRENT WORLD STATE, PINNED FACTS and NEW EVENTS, return JSON with: "events" (2-6 short concrete facts from the new events: who did, said or promised what, discoveries, deaths, injuries, moves, objects; written in ' + (S.lang === 'pl' ? 'Polish' : 'English') + '); "presentNow" (array of exact names, copied verbatim from KNOWN CHARACTERS, who are physically with the player at the very end of NEW EVENTS — omit anyone who left, died or was not actually shown); "locationNow" (a short label for exactly where the player is at the very end of NEW EVENTS, e.g. "Colony House, common room"); "deadNow" (array of exact names, copied verbatim from KNOWN CHARACTERS, who have died and remain dead as of now — empty array if nobody relevant has died); and these string fields, each a compact updated summary of the WHOLE story so far (keep what is still true, update what changed, never invent; use "none" if empty): ' + Object.entries(MEM_F).map(([k, v]) => `"${k}" = ${v[0]}: ${v[1]}`).join('; ') + '.';
+    const prompt = `KNOWN CHARACTERS:\n${registry.join(', ') || '(none yet)'}\n\nCURRENT WORLD STATE:\n${sc.summary || '(empty)'}\n\nPINNED FACTS:\n${(sc.pins || []).join('\n') || '(none)'}\n\nNEW EVENTS:\n${transcript}`;
     const text = await generateOnce(sys, [{ role: 'user', parts: [{ text: prompt }] }], 0.2, 4096, undefined, MEM_SCHEMA);
     let j; try { j = JSON.parse(text.replace(/^\s*```(?:json)?|```\s*$/g, '').trim()); } catch (e) { throw new Error('zły format odpowiedzi modelu'); }
     const ev = (j.events || []).map(x => String(x).trim()).filter(x => x.length > 8);
     const world = Object.entries(MEM_F).map(([k, v]) => { const x = String(j[k] || '').trim(); return x && !/^(none|n\/a|-)\.?$/i.test(x) ? `- ${v[0]}: ${x}` : ''; }).filter(Boolean).join('\n');
     if (world.length < 30) throw new Error('pusty stan świata');
-    sc.memUndo = { summary: sc.summary, jlen: sc.journal.length, summaryUpTo: sc.summaryUpTo, memAt: sc.memAt };
+    sc.memUndo = { summary: sc.summary, jlen: sc.journal.length, summaryUpTo: sc.summaryUpTo, memAt: sc.memAt, present: sc.present.slice(), location: sc.location, deadNow: (sc.deadNow || []).slice() };
     ev.forEach(t => { if (!sc.journal.some(x => x.t === t)) sc.journal.push({ t, at: upto }); });
     sc.summary = world; sc.memAt = upto; sc.summaryUpTo = Math.max(sc.summaryUpTo, upto - Math.max(6, histCap() - 4));
+    const matched = (j.presentNow || []).map(x => String(x).trim()).map(n => registry.find(r => r.toLowerCase() === n.toLowerCase())).filter(Boolean);
+    const locNow = String(j.locationNow || '').trim();
+    sc.deadNow = (j.deadNow || []).map(x => String(x).trim()).map(n => registry.find(r => r.toLowerCase() === n.toLowerCase())).filter(Boolean);
+    let sceneNote = '';
+    if (matched.length && JSON.stringify(matched) !== JSON.stringify(sc.present)) { sc.present = matched; sceneNote = ' Scena: obecni ' + matched.join(', ') + '.'; }
+    if (locNow && locNow !== sc.location) { sc.location = locNow; sceneNote += ' Miejsce: ' + locNow + '.'; }
     memSkip = 0; memErr = ''; save();
-    if (sc === A()) toast(`Pamięć zaktualizowana: +${ev.length} zdarzeń w dzienniku.`, 'ok');
+    if (sc === A()) { toast(`Pamięć zaktualizowana: +${ev.length} zdarzeń w dzienniku.${sceneNote}`, 'ok'); refreshFocus(); }
   } catch (e) { memSkip = 1; memErr = e.message; if (force) toast('Nie udało się zaktualizować pamięci: ' + e.message, 'err'); }
   memBusy = false; updateMemChip();
 }
@@ -1379,6 +1416,9 @@ function checkReply(text, sc) {
     const bad = [...new Set(spk.filter(n => known.has(first(n)) && !ok.has(first(n))))];
     if (bad.length) out.push(`${bad.join(', ')} speaks but is not in the current scene. Only characters listed as present, or already speaking in the recent messages, may talk.`);
   }
+  const dead = new Set((sc.deadNow || []).map(first));
+  const deadSpeaking = [...new Set(spk.filter(n => dead.has(first(n))))];
+  if (deadSpeaking.length) out.push(`${deadSpeaking.join(', ')} is dead per WORLD STATE and cannot speak or act now (a memory, vision or flashback must be marked clearly as such).`);
   const prev = [...sc.messages].reverse().find(m => m.role === 'model');
   if (prev && sim(text, prev.text) > 0.45) out.push('The reply repeats the previous one; write something new that moves the scene forward.');
   return out;
@@ -1765,7 +1805,7 @@ $('#memBtn').onclick = () => { fillMem(); memDlg.showModal(); };
 $('#memClose').onclick = () => memDlg.close();
 $('#memSave').onclick = () => { S.summary = $('#memWorld').value.trim(); S.pins = $('#memPins').value.split('\n').map(x => x.trim()).filter(Boolean); save(); fillMem(); toast('Pamięć zapisana. Model użyje jej od następnej odpowiedzi.', 'ok'); };
 $('#memNow').onclick = async () => { $('#memNow').disabled = true; await updateMemory(true); $('#memNow').disabled = false; fillMem(); };
-$('#memUndo').onclick = () => { const u = S.memUndo; if (!u) return; S.summary = u.summary; S.journal.length = u.jlen; S.summaryUpTo = u.summaryUpTo; S.memAt = u.memAt; S.memUndo = null; save(); fillMem(); updateMemChip(); toast('Cofnięto ostatnią aktualizację pamięci.', 'ok'); };
+$('#memUndo').onclick = () => { const u = S.memUndo; if (!u) return; S.summary = u.summary; S.journal.length = u.jlen; S.summaryUpTo = u.summaryUpTo; S.memAt = u.memAt; if (u.present) S.present = u.present; if (u.location != null) S.location = u.location; if (u.deadNow) S.deadNow = u.deadNow; S.memUndo = null; save(); fillMem(); updateMemChip(); refreshFocus(); toast('Cofnięto ostatnią aktualizację pamięci.', 'ok'); };
 
 $('#expBtn').onclick = exportAll;
 $('#impBtn').onclick = () => $('#impFile').click();
