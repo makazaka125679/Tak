@@ -273,6 +273,10 @@ textarea:focus,input:focus,select:focus{border-color:var(--accent)}
     <p class="hint">Wszystkie scenariusze i historia są tylko w tej przeglądarce. Wyczyszczenie danych przeglądarki je kasuje. Kopia nie zawiera klucza API.</p>
     <div class="actions"><button class="btn" id="expBtn">Zapisz kopię do pliku</button><button class="btn" id="impBtn">Wczytaj kopię</button></div><input type="file" id="impFile" accept="application/json,.json" hidden>
   </section>
+  <section class="card"><h3>Aplikacja</h3>
+    <p class="hint" id="appVer"></p>
+    <div class="actions"><button class="btn" id="updBtn">Sprawdź aktualizację</button></div>
+  </section>
   <section class="card">
   <div class="field">
     <span class="lbl">Baza wiedzy o serialu</span>
@@ -1485,6 +1489,7 @@ function fillSet() {
   $('#tempIn').value = G.temperature; $('#oledChk').checked = !!G.oled; setSeg('themeSeg', fTheme); fillProv();
   $('#usage').textContent = usageText();
   $('#kbInfo').textContent = `${S.kbOverride ? 'Własna baza' : 'Domyślna baza'}: ${KB.eps.length} odcinków, ${KB.chars.length} sekcji postaci.`;
+  $('#appVer').textContent = 'Wersja: ' + APP_VERSION + (navigator.serviceWorker && navigator.serviceWorker.controller ? ' · zainstalowana jako aplikacja' : ' · otwarta w przeglądarce');
   refreshDirty();
 }
 function openSet() { fillSet(); setDlg.showModal(); }
@@ -1807,6 +1812,7 @@ $('#memSave').onclick = () => { S.summary = $('#memWorld').value.trim(); S.pins 
 $('#memNow').onclick = async () => { $('#memNow').disabled = true; await updateMemory(true); $('#memNow').disabled = false; fillMem(); };
 $('#memUndo').onclick = () => { const u = S.memUndo; if (!u) return; S.summary = u.summary; S.journal.length = u.jlen; S.summaryUpTo = u.summaryUpTo; S.memAt = u.memAt; if (u.present) S.present = u.present; if (u.location != null) S.location = u.location; if (u.deadNow) S.deadNow = u.deadNow; S.memUndo = null; save(); fillMem(); updateMemChip(); refreshFocus(); toast('Cofnięto ostatnią aktualizację pamięci.', 'ok'); };
 
+$('#updBtn').onclick = checkForUpdate;
 $('#expBtn').onclick = exportAll;
 $('#impBtn').onclick = () => $('#impFile').click();
 $('#impFile').onchange = async e => {
@@ -1821,7 +1827,20 @@ $('#impFile').onchange = async e => {
 };
 setTimeout(() => { if (S.messages.length > 20 && Date.now() - (G.lastBackup || 0) > 5 * 864e5) toast('Minęło kilka dni od ostatniej kopii zapasowej. Zrób ją w Ustawieniach.'); }, 2500);
 
-if ('serviceWorker' in navigator && /^https?:$/.test(location.protocol)) navigator.serviceWorker.register('sw.js').catch(() => {});
+const APP_VERSION = '2026-09-22.2';
+let swReg = null, swRefreshing = false;
+if ('serviceWorker' in navigator && /^https?:$/.test(location.protocol)) {
+  navigator.serviceWorker.register('sw.js', { updateViaCache: 'none' }).then(reg => { swReg = reg; reg.update().catch(() => {}); }).catch(() => {});
+  navigator.serviceWorker.addEventListener('controllerchange', () => { if (swRefreshing) return; swRefreshing = true; location.reload(); });
+}
+async function checkForUpdate() {
+  if (!swReg) { toast('Ta przeglądarka nie obsługuje aktualizacji w tle — po prostu odśwież stronę.'); return; }
+  try {
+    await swReg.update();
+    if (swReg.waiting) { toast('Jest nowa wersja — trwa wczytywanie…', 'ok'); swReg.waiting.postMessage('skipWaiting'); }
+    else toast('Masz już najnowszą wersję (' + APP_VERSION + ').', 'ok');
+  } catch (e) { toast('Nie udało się sprawdzić aktualizacji: ' + e.message, 'err'); }
+}
 
 /* ================= INIT ================= */
 syncSide(); renderAll();
