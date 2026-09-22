@@ -1,0 +1,1791 @@
+<!doctype html>
+<html lang="pl" data-theme="day">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="color-scheme" content="light dark">
+<meta name="theme-color" content="#0a1214">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="icon-192.png">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Wcielenia">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<title>Wcielenia — czat z dowolną postacią</title>
+<style>
+:root{
+  --bg:#dfe4dc; --panel:#eef1ea; --ink:#1b2620; --muted:#4f5b53; --line:#c2cabf;
+  --accent:#2f6f68; --accent-ink:#ffffff; --danger:#a4322b; --player:#cfd9cb;
+  --edge-l:40%; --who-l:30%;
+  --serif:"Iowan Old Style","Palatino Linotype",Palatino,"Book Antiqua",Georgia,serif;
+  --sans:system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
+}
+[data-theme="night"]{
+  --bg:#0d191d; --panel:#14232a; --ink:#dde6e0; --muted:#93a79f; --line:#25393f;
+  --accent:#8fc9b8; --accent-ink:#0b1519; --danger:#e58a80; --player:#1c3037;
+  --edge-l:60%; --who-l:72%;
+}
+*{box-sizing:border-box}
+html,body{height:100%;margin:0}
+body{background:var(--bg);color:var(--ink);font:16px/1.5 var(--sans);display:flex;flex-direction:column;transition:background-color .5s,color .5s}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+button,input,select,textarea{font:inherit;color:inherit}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+
+header{display:flex;align-items:center;gap:.5rem;padding:calc(env(safe-area-inset-top,0px) + .55rem) .8rem .55rem;background:var(--panel);border-bottom:1px solid var(--line)}
+.brand{font:600 1.3rem var(--serif);letter-spacing:.04em;margin-right:.2rem}
+.scene{flex:1;min-width:0;text-align:left;background:transparent;border:1px solid var(--line);border-radius:999px;padding:.3rem .8rem;cursor:pointer;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:.92rem;color:var(--muted)}
+.scene b{color:var(--ink);font-weight:600}
+.icon{width:2.4rem;height:2.4rem;flex:none;display:grid;place-items:center;background:transparent;border:1px solid var(--line);border-radius:50%;cursor:pointer}
+.icon svg{width:1.15rem;height:1.15rem;fill:none;stroke:currentColor;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round}
+
+main{flex:1;overflow-y:auto;padding:1rem .9rem 1.5rem;overscroll-behavior:contain}
+.wrap{max-width:44rem;margin:0 auto}
+
+.narr{font-family:var(--serif);font-size:1.07rem;line-height:1.65;margin:.75rem 0}
+.speech{display:flex;flex-direction:column;gap:.1rem;margin:.8rem 0;padding-left:.85rem;border-left:3px solid hsl(var(--h) 42% var(--edge-l))}
+.who{font-weight:600;font-size:.92rem;color:hsl(var(--h) 45% var(--who-l))}
+.say{font-family:var(--serif);font-size:1.07rem;line-height:1.6}
+.you{margin:1.1rem 0 1.1rem auto;width:fit-content;max-width:88%;background:var(--player);padding:.6rem .85rem;border-radius:14px 14px 4px 14px;white-space:pre-wrap;overflow-wrap:anywhere}
+.divider{display:flex;align-items:center;gap:.8rem;color:var(--muted);font-size:.88rem;margin:1.6rem 0}
+.divider::before,.divider::after{content:"";flex:1;border-top:1px solid var(--line)}
+.err{margin:1rem 0;padding:.7rem .85rem;border:1px solid var(--danger);border-radius:10px;color:var(--danger)}
+.typing{display:inline-flex;gap:.3rem;padding:.6rem 0}
+.typing i{width:.45rem;height:.45rem;border-radius:50%;background:var(--muted);animation:blink 1.2s infinite}
+.typing i:nth-child(2){animation-delay:.2s}.typing i:nth-child(3){animation-delay:.4s}
+@keyframes blink{0%,80%,100%{opacity:.25}40%{opacity:1}}
+@media (prefers-reduced-motion:reduce){.typing i{animation:none;opacity:.6}body{transition:none}}
+
+.welcome{margin:2rem 0;padding:1.1rem 1.1rem 1.2rem;border:1px solid var(--line);border-radius:14px;background:var(--panel)}
+.welcome h1{font:600 1.35rem var(--serif);margin:0 0 .5rem}
+.welcome p{font-family:var(--serif);margin:.5rem 0}
+.welcome .btn{margin-top:.6rem}
+
+footer{background:var(--panel);border-top:1px solid var(--line);padding:.5rem .8rem calc(env(safe-area-inset-bottom,0px) + .55rem)}
+.tools{display:flex;gap:.4rem;align-items:center;margin-bottom:.45rem;flex-wrap:wrap}
+.tools select{max-width:9rem}
+.row{display:flex;gap:.5rem;align-items:flex-end}
+textarea{flex:1;resize:none;max-height:9rem;padding:.6rem .75rem;border:1px solid var(--line);border-radius:12px;background:var(--bg);line-height:1.4}
+select,input[type=text],input[type=password],input[type=number],input:not([type]){padding:.5rem .65rem;border:1px solid var(--line);border-radius:10px;background:var(--bg);width:100%}
+.tools select{width:auto}
+.btn{padding:.5rem .9rem;border-radius:10px;border:1px solid var(--line);background:transparent;cursor:pointer;white-space:nowrap}
+.btn.primary{background:var(--accent);color:var(--accent-ink);border-color:var(--accent);font-weight:600}
+.btn.ghost{padding:.35rem .7rem;font-size:.9rem;color:var(--muted)}
+.btn.danger{color:var(--danger);border-color:var(--danger)}
+.btn[disabled]{opacity:.45;cursor:default}
+
+dialog{border:none;padding:0;background:var(--panel);color:var(--ink);width:100%;max-width:40rem;margin:auto auto 0;border-radius:18px 18px 0 0;max-height:92dvh}
+dialog::backdrop{background:rgba(4,10,12,.6)}
+.sheet{padding:1rem 1.1rem calc(env(safe-area-inset-bottom,0px) + 1.1rem);overflow-y:auto;max-height:92dvh}
+.sheet h2{font:600 1.25rem var(--serif);margin:.2rem 0 .6rem}
+.field{margin:1rem 0}
+.field>label,.lbl{display:block;font-size:.9rem;color:var(--muted);margin-bottom:.3rem}
+.field textarea{width:100%;min-height:7rem;max-height:none}
+.hint{font-size:.88rem;color:var(--muted);margin:.4rem 0}
+.hint a{color:var(--accent)}
+.inline{display:flex;gap:.5rem}
+.chips{display:flex;flex-wrap:wrap;gap:.4rem}
+.chips button,.seg button{padding:.3rem .7rem;border:1px solid var(--line);border-radius:999px;background:transparent;cursor:pointer;font-size:.92rem}
+.chips button[aria-pressed=true],.seg button[aria-pressed=true]{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
+.seg{display:flex;gap:.4rem}
+.check{display:flex;gap:.6rem;align-items:flex-start;font-size:.95rem;color:var(--ink)}
+.check input{margin-top:.25rem}
+.actions{display:flex;gap:.5rem;flex-wrap:wrap;margin-top:1rem}
+hr{border:none;border-top:1px solid var(--line);margin:1.3rem 0}
+
+#toast{position:fixed;left:50%;bottom:calc(env(safe-area-inset-bottom,0px) + 6.5rem);transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:.5rem .9rem;border-radius:10px;font-size:.92rem;max-width:90vw;opacity:0;pointer-events:none;transition:opacity .25s;z-index:20}
+#toast.on{opacity:1}
+[hidden]{display:none !important}
+.sheet>.actions:last-child{position:sticky;bottom:calc(-1 * (env(safe-area-inset-bottom,0px) + 1.1rem));background:var(--panel);margin:1rem -1.1rem calc(-1 * (env(safe-area-inset-bottom,0px) + 1.1rem));padding:.7rem 1.1rem calc(env(safe-area-inset-bottom,0px) + .8rem);border-top:1px solid var(--line)}
+input[type=search]{padding:.5rem .65rem;border:1px solid var(--line);border-radius:10px;background:var(--bg);width:100%}
+.seg{flex-wrap:wrap}
+.kbl{font-family:var(--serif);line-height:1.55;margin:.45rem 0}
+.tag{color:var(--accent);font-family:var(--sans);font-size:.78rem;font-weight:600;margin-right:.15rem}
+.fut{opacity:.55}
+#kbBody h3{font:600 1.05rem var(--serif);margin:1.2rem 0 .2rem}
+#kbBody details{border-top:1px solid var(--line);padding:.55rem 0}
+#kbBody summary{cursor:pointer;font-weight:600}
+.kbpre{white-space:pre-wrap;overflow-wrap:anywhere;font:.8rem/1.45 ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;margin:.5rem 0}
+#kbText{width:100%;min-height:52dvh;font:.82rem/1.45 ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;max-height:none}
+.shell{flex:1;display:flex;min-height:0;position:relative}
+.col{flex:1;display:flex;flex-direction:column;min-width:0;min-height:0}
+aside#side{width:17.5rem;flex:none;background:var(--panel);border-right:1px solid var(--line);display:flex;flex-direction:column;min-height:0}
+.side-head{display:flex;align-items:center;justify-content:space-between;gap:.5rem;padding:.8rem .9rem .5rem}
+.side-head h2{font:600 1.15rem var(--serif);margin:0}
+.sc-list{flex:1;overflow-y:auto;padding:.25rem 0 .75rem}
+.sc-item{display:flex;align-items:stretch;gap:.15rem;margin:.15rem .5rem;border-radius:12px;border:1px solid transparent}
+.sc-item[aria-current="true"]{background:var(--player);border-color:var(--line)}
+.sc-main{flex:1;min-width:0;text-align:left;padding:.55rem .7rem;background:transparent;border:0;border-radius:12px;cursor:pointer;display:flex;flex-direction:column;gap:.1rem}
+.sc-name{font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.sc-meta{font-size:.82rem;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.sc-edit{flex:none;width:2.4rem;display:grid;place-items:center;background:transparent;border:0;border-radius:12px;cursor:pointer;color:var(--muted)}
+.sc-edit svg{width:1.05rem;height:1.05rem;fill:none;stroke:currentColor;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round}
+.side-foot{padding:.6rem .9rem calc(env(safe-area-inset-bottom,0px) + .8rem);border-top:1px solid var(--line);display:flex}
+#scrim{display:none}
+@media (max-width:959px){
+  aside#side{position:fixed;z-index:30;top:0;bottom:0;left:0;width:min(20rem,86vw);padding-top:env(safe-area-inset-top,0px);transform:translateX(-104%);transition:transform .25s;box-shadow:0 0 30px rgba(0,0,0,.35)}
+  body.side-open aside#side{transform:none}
+  #scrim{display:block;position:fixed;inset:0;z-index:25;background:rgba(4,10,12,.55);opacity:0;pointer-events:none;transition:opacity .25s}
+  body.side-open #scrim{opacity:1;pointer-events:auto}
+}
+@media (min-width:960px){ #menuBtn{display:none} }
+@media (max-width:639px){ .brand{display:none} }
+@media (prefers-reduced-motion:reduce){ aside#side,#scrim{transition:none} }
+
+/* ===== v2 look ===== */
+:root{--bg:#e8ece4;--panel:#f6f8f2;--ink:#17221d;--muted:#56645b;--line:#cbd3c6;--accent:#2a6a62;--player:#d5e0d0;--shadow:0 1px 2px rgba(20,40,30,.08),0 8px 24px rgba(20,40,30,.06)}
+[data-theme="night"]{--bg:#0a1214;--panel:#111c20;--ink:#e1e9e3;--muted:#8fa49b;--line:#22343a;--accent:#e6bd6b;--accent-ink:#1a1406;--player:#1a2a2f;--danger:#f0958b;--shadow:0 1px 2px rgba(0,0,0,.4),0 10px 30px rgba(0,0,0,.35)}
+[data-theme="night"][data-oled="1"]{--bg:#000;--panel:#060d0f;--line:#182629;--player:#10201f}
+header{box-shadow:var(--shadow);position:relative;z-index:5}
+.brand{font-size:1.45rem;font-style:italic}
+.scene{background:var(--bg)}
+.icon{transition:background-color .2s,border-color .2s}.icon:hover,.scene:hover{border-color:var(--accent)}
+.you{box-shadow:var(--shadow)}
+.speech{background:linear-gradient(90deg,hsl(var(--h) 40% 50%/.08),transparent 70%);padding:.45rem .6rem .5rem .85rem;border-radius:0 12px 12px 0}
+.who::before{content:"";display:inline-block;width:.5rem;height:.5rem;border-radius:50%;background:hsl(var(--h) 45% var(--who-l));margin-right:.4rem}
+.narr{color:var(--muted);font-style:italic}
+footer{box-shadow:0 -6px 24px rgba(0,0,0,.06)}
+textarea:focus,input:focus,select:focus{border-color:var(--accent)}
+.sheet h3{font:600 1.02rem var(--serif);margin:0 0 .5rem}
+.card{border:1px solid var(--line);border-radius:14px;padding:.9rem 1rem;margin:.9rem 0;background:var(--bg)}
+.card .field:first-of-type{margin-top:.6rem}
+.card input,.card select,.card textarea{background:var(--panel)}
+.seg button{flex:1;min-height:2.4rem}
+#toast{display:flex;gap:.55rem;align-items:center;padding:.65rem 1rem;box-shadow:var(--shadow);border-left:4px solid var(--accent);background:var(--panel);color:var(--ink);border-radius:12px;width:max-content;max-width:min(92vw,30rem);transform:translate(-50%,12px);transition:opacity .25s,transform .25s;bottom:calc(env(safe-area-inset-bottom,0px) + 7rem)}
+#toast.on{transform:translate(-50%,0)}
+#toast.ok::before{content:"\2713";color:var(--accent);font-weight:700}
+#toast.err{border-left-color:var(--danger)}#toast.err::before{content:"!";color:var(--danger);font-weight:700}
+#connStatus.ok{color:var(--accent)}#connStatus.bad{color:var(--danger)}
+.dirty{color:var(--accent);font-size:.9rem;align-self:center}
+.inline{flex-wrap:wrap}.inline input{flex:1 1 13rem;min-width:0}
+.jrow{display:flex;gap:.5rem;justify-content:space-between;align-items:flex-start;padding:.45rem 0;border-top:1px solid var(--line);font-family:var(--serif);font-size:.95rem}
+#memBtn{border-color:var(--accent);color:var(--accent)}
+#memWorld,#memPins{min-height:9rem}
+.acts{display:flex;gap:.4rem;flex-wrap:wrap;margin:.25rem 0 .6rem}.you+.acts{justify-content:flex-end}
+.acts .btn{min-height:2.1rem;padding:.3rem .8rem;font-size:.9rem}
+#memBtn.warn{border-color:var(--danger,#b3261e);color:var(--danger,#b3261e)}
+</style>
+</head>
+<body>
+<noscript>Ta aplikacja wymaga włączonego JavaScriptu.</noscript>
+
+<header>
+  <button id="menuBtn" class="icon" aria-label="Scenariusze" aria-expanded="false" aria-controls="side">
+    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/></svg>
+  </button>
+  <div class="brand">Wcielenia</div>
+  <button id="sceneBtn" class="scene" aria-haspopup="dialog"></button>
+  <button id="kbBtn" class="icon" aria-label="Baza wiedzy" aria-haspopup="dialog">
+    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20V3H6.5A2.5 2.5 0 0 0 4 5.5z"/><path d="M4 19.5A2.5 2.5 0 0 0 6.5 22H20v-5"/></svg>
+  </button>
+  <button id="timeBtn" class="icon" aria-label="Przełącz motyw jasny/ciemny"></button>
+  <button id="setBtn" class="icon" aria-label="Ustawienia" aria-haspopup="dialog">
+    <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.9l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.9-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.9.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.9 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.9l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.9.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.9-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.9V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg>
+  </button>
+</header>
+
+<div class="shell">
+<aside id="side" aria-label="Scenariusze">
+  <div class="side-head"><h2>Scenariusze</h2><button class="btn primary" id="newScBtn">Nowy</button></div>
+  <div class="sc-list" id="scList" role="list"></div>
+  <div class="side-foot"><label class="btn" for="scImport">Importuj scenariusz</label><input id="scImport" type="file" accept="application/json,.json" class="sr"></div>
+</aside>
+<div class="col">
+<main id="chat"><div class="wrap" id="log"></div></main>
+
+<footer>
+  <div class="wrap">
+    <div class="tools">
+      <label class="sr" for="focusSel">Kto odpowiada</label>
+      <select id="focusSel"></select>
+      <button id="redoBtn" class="btn ghost">Ponów</button>
+      <button id="undoBtn" class="btn ghost">Cofnij</button>
+      <button id="contBtn" class="btn ghost">Dalej</button>
+      <button id="memBtn" class="btn ghost">Pamięć</button>
+    </div>
+    <div class="row">
+      <label class="sr" for="input">Twoja wiadomość</label>
+      <textarea id="input" rows="1" placeholder="Co robisz albo mówisz?"></textarea>
+      <button id="sendBtn" class="btn primary">Wyślij</button>
+    </div>
+  </div>
+</footer>
+</div>
+</div>
+<div id="scrim"></div>
+
+<div id="toast" role="status" aria-live="polite"></div>
+
+<dialog id="sceneDlg" aria-labelledby="sceneTitle"><div class="sheet">
+  <h2 id="sceneTitle">Scena</h2>
+  <div class="field" id="scenePointRow">
+    <label for="pointSel">Postacie znają serial do końca odcinka</label>
+    <select id="pointSel"></select>
+    <p class="hint" id="nowPlaying"></p>
+    <button class="btn" id="nextEp">Przejdź do następnego odcinka</button>
+  </div>
+  <div class="field">
+    <label for="locIn">Miejsce</label>
+    <input id="locIn" list="locList" autocomplete="off">
+    <datalist id="locList">
+      <option value="Las — porzucony pojazd opancerzony"></option><option value="Colony House"></option><option value="Miasteczko (Township)"></option>
+      <option value="Bar"></option><option value="Diner"></option><option value="Klinika"></option><option value="Posterunek szeryfa"></option>
+      <option value="Kościół"></option><option value="Wieża radiowa"></option><option value="Jaskinie pod miastem"></option><option value="Las"></option>
+    </datalist>
+  </div>
+  <div class="field">
+    <span class="lbl">Pora dnia</span>
+    <div class="seg" id="timeSeg"><button data-time="day">Dzień</button><button data-time="night">Noc</button></div>
+  </div>
+  <div class="field">
+    <span class="lbl">Kto jest w scenie</span>
+    <div class="chips" id="presentChips"></div>
+  </div>
+  <div class="actions"><button class="btn primary" id="sceneClose">Gotowe</button></div>
+</div></dialog>
+
+<dialog id="setDlg" aria-labelledby="setTitle"><div class="sheet">
+  <h2 id="setTitle">Ustawienia</h2>
+  <section class="card"><h3>Połączenie z Gemini</h3>
+        <div class="field"><label for="keyIn" id="keyLbl">Klucz API</label><input id="keyIn" type="password" autocomplete="off"><p class="hint" id="keyHint"></p></div>
+    <div class="field"><label for="modelIn">Model</label><div class="inline"><input id="modelIn" list="modelList" autocomplete="off"><button class="btn" id="modelsBtn">Pobierz listę</button></div><datalist id="modelList"></datalist><p class="hint" id="modelHint"></p></div>
+    <div class="actions"><button class="btn" id="testBtn">Sprawdź połączenie</button></div>
+    <p class="hint" id="connStatus" role="status"></p><p class="hint" id="usage"></p>
+  </section>
+  <section class="card"><h3>Styl rozmowy</h3>
+    <div class="field"><label for="langSel">Język odpowiedzi narratora</label><select id="langSel"><option value="en">English</option><option value="pl">Polski</option></select></div>
+    <div class="field"><label for="emoSel">Emocje postaci</label><select id="emoSel"><option value="low">Stonowane</option><option value="natural">Naturalne</option><option value="expressive">Wyraziste</option></select></div>
+    <div class="field"><label for="lenSel">Długość odpowiedzi</label><select id="lenSel"><option value="short">Krótsze</option><option value="medium">Średnie</option><option value="long">Dłuższe</option></select></div>
+    <div class="field"><label for="goreSel">Brutalność (gore)</label><select id="goreSel"><option value="off">Łagodna (głównie poza kadrem)</option><option value="medium">Średnia (rany i krew, bez przesady)</option><option value="high">Krwawa (szczegółowy horror)</option></select></div>
+    <div class="field"><label for="toneSel">Wulgaryzmy i humor</label><select id="toneSel"><option value="off">Bez przekleństw</option><option value="natural">Naturalnie (przeklinają i żartują)</option><option value="heavy">Ostro (dużo przekleństw)</option></select></div>
+    <div class="field"><label for="tempIn">Kreatywność odpowiedzi (0–2)</label><input id="tempIn" type="number" min="0" max="2" step="0.05"><p class="hint">Ok. 0,7 = spójniej. Ok. 1,2 = bardziej zaskakująco.</p></div>
+    <div class="field"><label for="thinkSel">Namysł modelu</label><select id="thinkSel"><option value="auto">Domyślny</option><option value="low">Krótki (szybciej)</option><option value="high">Głęboki (logiczniej, wolniej)</option></select><p class="hint">Jeśli model nie obsługuje tej opcji, strona sama ją pominie.</p></div>
+  </section>
+  <section class="card"><h3>Wygląd</h3>
+    <div class="seg" id="themeSeg"><button data-v="light">Jasny</button><button data-v="dark">Ciemny</button><button data-v="auto">Jak telefon</button><button data-v="story">Jak w fabule</button></div>
+    <label class="check" style="margin-top:.7rem"><input type="checkbox" id="oledChk"><span>Czysta czerń w ciemnym motywie (oszczędza baterię na ekranach OLED)</span></label>
+  </section>
+  <section class="card"><h3>Kopia zapasowa</h3>
+    <p class="hint">Wszystkie scenariusze i historia są tylko w tej przeglądarce. Wyczyszczenie danych przeglądarki je kasuje. Kopia nie zawiera klucza API.</p>
+    <div class="actions"><button class="btn" id="expBtn">Zapisz kopię do pliku</button><button class="btn" id="impBtn">Wczytaj kopię</button></div><input type="file" id="impFile" accept="application/json,.json" hidden>
+  </section>
+  <section class="card">
+  <div class="field">
+    <span class="lbl">Baza wiedzy o serialu</span>
+    <p class="hint" id="kbInfo"></p>
+    <div class="actions"><button class="btn" id="kbOpen">Otwórz bazę</button><label class="btn" for="kbFile">Wczytaj własną bazę (.md)</label><input id="kbFile" type="file" accept=".md,.txt,text/markdown,text/plain" class="sr"><button class="btn" id="kbReset">Przywróć domyślną</button></div>
+  </div>
+  </section>
+  <div class="actions"><button class="btn primary" id="setSave" disabled>Zapisz ustawienia</button><button class="btn" id="setClose">Zamknij</button><span class="dirty" id="dirtyMsg" hidden>Niezapisane zmiany</span></div>
+</div></dialog>
+
+<dialog id="scDlg" aria-labelledby="scTitle"><div class="sheet">
+  <h2 id="scTitle">Nowy scenariusz</h2>
+  <div class="field" id="scKindRow"><span class="lbl">Rodzaj scenariusza</span><div class="seg" id="scKindSeg"><button data-k="from">Serial From</button><button data-k="custom">Własna postać</button></div></div>
+  <div class="field" id="scPresetRow"><label for="scPreset">Szablon</label><select id="scPreset"></select><p class="hint" id="scPresetHint"></p></div>
+  <div class="field"><label for="scName">Nazwa scenariusza</label><input id="scName" autocomplete="off"></div>
+  <div class="field"><label for="scPlayer">Imię twojej postaci</label><input id="scPlayer" autocomplete="off" placeholder="Puste: postać przedstawi się sama"></div>
+  <div class="field"><label for="scStory" id="scStoryLbl">Kim jest twoja postać (najlepiej po angielsku)</label><textarea id="scStory"></textarea></div>
+  <div class="field"><label for="scOpen">Scena otwierająca</label><textarea id="scOpen" placeholder="Co dzieje się na początku? Puste: narrator wymyśli."></textarea></div>
+  <div class="field"><label for="scNotes">Dodatkowe zasady dla narratora (opcjonalnie)</label><textarea id="scNotes" placeholder="np. postać nie ma broni; Julie jest w złym humorze"></textarea></div>
+  <div id="scStartOnly">
+    <div class="field"><label for="scPoint">Postacie znają serial do końca odcinka</label><select id="scPoint"></select></div>
+    <div class="field"><label for="scLoc">Miejsce na start</label><input id="scLoc" list="locList" autocomplete="off"></div>
+    <div class="field"><span class="lbl">Pora dnia</span><div class="seg" id="scTime"><button data-time="day">Dzień</button><button data-time="night">Noc</button></div></div>
+    <div class="field"><span class="lbl">Kto jest w scenie na start</span><div class="chips" id="scChips"></div></div>
+  </div>
+  <div id="scCustomOnly" hidden>
+    <div class="field"><label for="scCharName">Imię postaci</label><input id="scCharName" autocomplete="off" placeholder="np. Aria Nightshade"></div>
+    <div class="field"><label for="scCharDesc">Osobowość, wygląd, sposób mówienia</label><textarea id="scCharDesc" placeholder="Opisz postać: charakter, jak mówi, jak wygląda, co ją napędza, do kogo się zwraca."></textarea></div>
+    <div class="field"><label for="scWorld">Świat / otoczenie (opcjonalnie)</label><textarea id="scWorld" placeholder="Gdzie i kiedy się to dzieje, jakie tam rządzą zasady. Puste: narrator dopasuje świat do postaci."></textarea></div>
+    <div class="field"><label for="scOthers">Kto jeszcze bywa w scenie (opcjonalnie, po przecinku)</label><input id="scOthers" autocomplete="off" placeholder="np. Kapitan Reyes, Mruczek kot"></div>
+    <div class="field"><label for="scLocC">Miejsce na start</label><input id="scLocC" autocomplete="off"></div>
+    <div class="field"><span class="lbl">Pora dnia</span><div class="seg" id="scTimeC"><button data-time="day">Dzień</button><button data-time="night">Noc</button></div></div>
+  </div>
+  <div class="field" id="scMemRow"><label for="scMem">Pamięć opowieści (narrator uzupełnia ją sam, możesz ją poprawić)</label><textarea id="scMem" placeholder="Pusta, dopóki historia jest krótka."></textarea></div>
+  <p class="hint" id="scEditHint">„Udostępnij" zapisuje samą postać, bez waszej rozmowy i bez klucza API — plik możesz wysłać znajomemu, a on wczyta go przez „Importuj scenariusz" w bocznym menu.</p>
+  <div class="actions" id="scEditActions"><button class="btn" id="scDup">Duplikuj</button><button class="btn" id="scExp">Udostępnij</button><button class="btn" id="scReset">Zacznij od nowa</button><button class="btn danger" id="scDel">Usuń</button></div>
+  <div class="actions"><button class="btn primary" id="scSave">Utwórz</button><button class="btn" id="scCancel">Anuluj</button></div>
+</div></dialog>
+
+<dialog id="kbDlg" aria-labelledby="kbTitle"><div class="sheet">
+  <h2 id="kbTitle">Baza wiedzy</h2>
+  <div class="seg" id="kbTabs">
+    <button data-tab="world">Świat</button><button data-tab="chars">Postacie</button><button data-tab="eps">Odcinki</button><button data-tab="prompt">Tekst dla narratora</button>
+  </div>
+  <div class="field" id="kbSearchRow"><label for="kbSearch">Szukaj</label><input id="kbSearch" type="search" placeholder="np. Julie, talisman, S2E5" autocomplete="off"></div>
+  <label class="check" id="kbOnlyRow"><input type="checkbox" id="kbOnlyPast"><span>Ukryj to, co dzieje się po bieżącym punkcie fabuły (przyciemnione wpisy to przyszłość)</span></label>
+  <div id="kbBody"></div>
+  <div class="actions">
+    <button class="btn" id="kbEdit">Edytuj</button><button class="btn primary" id="kbSave" hidden>Zapisz</button><button class="btn" id="kbCancel" hidden>Anuluj</button>
+    <button class="btn" id="kbDl">Pobierz .md</button><button class="btn" id="kbClose">Zamknij</button>
+  </div>
+</div></dialog>
+
+<dialog id="memDlg" aria-labelledby="memTitle"><div class="sheet">
+  <h2 id="memTitle">Pamięć opowieści</h2>
+  <p class="hint" id="memInfo"></p>
+  <div class="field"><label for="memWorld">Stan świata (co jest prawdą teraz: gdzie kto jest, kto żyje, co kto wie, komu ufa)</label><textarea id="memWorld"></textarea></div>
+  <div class="field"><label for="memPins">Przypięte fakty (jeden na linię, nigdy nie znikają)</label><textarea id="memPins" placeholder="np. Marielle nie wie, że Jim nie żyje."></textarea></div>
+  <div class="field"><span class="lbl">Dziennik zdarzeń (od najnowszych)</span><div id="memJ"></div></div>
+  <div class="actions"><button class="btn primary" id="memSave">Zapisz pamięć</button><button class="btn" id="memNow">Zaktualizuj teraz</button><button class="btn" id="memUndo">Cofnij ostatnią aktualizację</button><button class="btn" id="memClose">Zamknij</button></div>
+</div></dialog>
+
+<script type="text/plain" id="kb">
+# FROM (Stamtąd) — Knowledge Base
+
+Covers all 40 episodes (Seasons 1–4, aired Feb 2022 – Jun 2026). Season 5 (final) is expected in 2027, so nothing after S4E10 is known.
+
+HOW THIS FILE IS ORGANISED
+- Every fact in the WORLD and CHARACTERS sections is tagged with the episode where the audience first learns it, e.g. [S2E4]. To simulate "we are at S1E5", ignore every fact tagged later than S1E5.
+- The EPISODES sections are in order. Each `## SxEy` block is one episode. Cut everything after the chosen point.
+- Written from public episode summaries and cast information, reworded. It is detailed on plot events, thinner on exact dialogue. Details may contain small errors: correct them here when you notice one.
+
+============================================================
+# WORLD AND RULES
+============================================================
+
+- [S1E1] The Township is a small town somewhere in the United States that traps everyone who enters. Leaving by road only loops you back into town.
+- [S1E1] Residents are ordinary people who ended up stranded there, arriving by car, RV and later a bus, over many years.
+- [S1E1] At night, creatures come out of the surrounding forest. They look human and can pose as people (for example an old woman who tricks a child into letting her in) and kill anyone they reach. In daylight they are gone.
+- [S1E2] The creatures are intelligent and hunt in groups. Boyd says a talisman placed inside an enclosed room protects the people inside.
+- [S1E8] Boyd first learned that talismans work while sheltering overnight in a cave surrounded by creatures.
+- [S1E2] Creatures get in when a resident opens a door for them (Sara, driven by the voices, opens the clinic door). A talisman is the main defence. [S1E7] Creatures also get in through a window opened by Kevin.
+- [S1E1] Colony House is the communal shelter led by Donna, where everything is shared. The other option is private houses in the Township. [S1E3] "Choosing Day" is when a newcomer decides which one to live in.
+- [S1E1] Places in town: the diner, the bar, the clinic, the church and the sheriff's office. Colony House sits up the hill. [S1E5] The barn with the farm animals; the Brundles, a hidden lake.
+- [S1E2] Protocol: newcomers arriving at Colony House are tied up the first night until they are told the rules.
+- [S1E3] The Box: the town's only punishment. A person is locked in it overnight, exposed to the creatures. Frank is put in it and killed.
+- [S1E2] Sara hears voices in her head that push her to kill. She has seizures when they take hold. [S1E6] The voices are real: they know things only Khatri knew.
+- [S1E2] The "Boy in White" is a child-like figure only a few people can see. First seen by Ethan; [S1E4] Victor has known him since childhood. Sara and Tabitha also see him later.
+- [S1E4] "Farway" trees: hollow trees that teleport whoever enters them (or objects) to another place. Victor knows them.
+- [S1E4] The town has no fixed physical location (Kenny shows Jade evidence).
+- [S1E6] Jade sees a strange symbol in a tree, also drawn in a discarded notebook. [S2E8] The symbols and the notebook matter to the story of the children and the tower.
+- [S1E9] The bottle tree: a tree with small bottles hanging from it, each holding a scrap of paper; one is from 1864. [S3E10] The numbers on the bottles are musical notes; playing them summons children who trigger memories of past lives.
+- [S1E10] A lighthouse produces the light and horn heard in the forest. [S1E10] A radio tower is built by Jim, Jade and the town, powered by wiring from the houses. On the radio, a threatening voice speaks to Jim by name. [S3E10 / S4E1] That voice belongs to the Man in Yellow.
+- [S1E10] Underground caves under the town are where the creatures sleep (Victor).
+- [S2E1] A mineshaft, a dungeon and a music box appear in Boyd's story. [S2E2] Martin, chained in a dungeon, dies after passing worm-like parasites to Boyd. [S2E10] Destroying the music box ended the immediate danger from the entity behind the cicadas and comas.
+- [S2E8] Cicada-like creatures come at night; they kill sleepers. A chant (they touch, they break, they steal, no one here is free) is repeated by their victims. Staying awake protects.
+- [S2E10] A tower holds imprisoned children. Victor's mother tried to rescue them. Tabitha reaches the tower through a tree, and the Boy in White pushes her out a window into the outside world.
+- [S3E1] The outside world does exist: Tabitha wakes in a hospital in Camden, Maine.
+- [S3E2] Miranda (Victor's mother) claimed she was chosen to free the children in the tower.
+- [S3E5] Entering the bottle tree does not let people escape: Dale goes inside and is teleported inside the walls of the empty pool, dying.
+- [S3E10] The creatures were once the town's first residents; they gained immortality by sacrificing their children (Fatima). Smiley is reborn at the end of S3.
+- [S3E10] Tabitha and Jade are reincarnations of Miranda and Christopher, who died trying to save the children.
+- [S4E1] The Man in Yellow is a powerful shapeshifter. [S4E1] He arrives disguised as a new resident named Sophia.
+- [S4E2] Julie can travel back in time using the ruins ("story-walking"); the past cannot be changed (Man in Yellow's warning).
+- [S4E10] Uprooting the bottle tree causes darkness and an earthquake. Fatima can now transform into a creature.
+
+============================================================
+# CHARACTERS
+============================================================
+NOTE: "Voice" lines describe how each person talks and behaves; they are interpretation built from the episodes, so edit them freely. Julie is the most detailed character.
+
+## Julie Matthews (Hannah Cheramy)
+- [S1E1] Teenage daughter of Jim and Tabitha, older sister of Ethan, about 17 at the start. Arrives with her family on a cross-country RV trip and is panicked but unhurt in the crash.
+- [S1E1] The family was already fractured before the trip. She is closer to her father Jim than to her mother Tabitha, who often does not share information with her, so Julie feels treated like a child or manipulated. She is a capable young woman when she is told the truth and included.
+- [S1E1] Voice: a modern teenager. Blunt, dry and sometimes flippant when she feels talked down to. Asks direct questions and wants real answers. Gets angry rather than tearful in front of her parents, and cries privately or with people she trusts. Uses humor to cope. Protective of Ethan. Not a lecturer and not melodramatic; short sentences, real reactions.
+- [S1E2] On the first night she is tied up with Tabitha "per protocol" and is scared. Victor startles her. Fatima welcomes her at once, shows her Ellis's paintings, and tells her that if you climb high enough even a nightmare can look like a dream.
+- [S1E3] Her parents order her to stay behind with Ethan while they tour the town, which annoys her. On Choosing Day she flippantly chooses Colony House, apart from her family, and the residents toast her arrival. She is thrilled and a little scared.
+- [S1E3] Fatima and Julie become close friends fast. Julie also gets on with Ellis. She notices details, such as that Colony House grows its own food.
+- [S1E4] First big fight with Tabitha over a sweater and coming home: she says her parents always treat her as if she has made a mistake. She reveals she already knew about their planned divorce and that the trip was a last hurrah. She asks why she and Ethan are not enough when Thomas is dead. That night Fatima and Ellis give her a bed of her own and say there are no mistakes, only choices.
+- [S1E5] Writes a list of everyone who will be wondering where her family is (grandparents and friends). Says she has no boyfriend or girlfriend, which she thinks is for the best. Fatima and Ellis take her to the Brundles, a hidden lake, for a carefree afternoon. Ethan runs to her crying after Sara's attack.
+- [S1E6] Collects flowers from the porch and arranges them; Fatima praises her eye.
+- [S1E7] At Fatima's anniversary party she tells Fatima she makes the Township feel almost normal. When the creatures attack she flees with Victor, who sends her through a farway tree; she comes out in a root cellar with no idea what happened.
+- [S1E8] Back with her family, she breaks down and asks what is happening to them. Tabitha finally tells her honestly that a piece of her broke when Thomas died.
+- [S1E10] Julie is optimistic and holds the family together. She scolds Jade for calling her father "Tea Cup"; Jade starts calling her "Spark Plug". She tells Jim that Ethan said they were supposed to be here, and that at home they had stopped talking but now they are together. She lets Jim make the first radio call ("no, you do it"). Confused when Jim runs off and Donna cannot answer her.
+- [S1E3] Relationships: Fatima is a big-sister figure and best friend; Ellis a friendly older guy; Jim her ally; Tabitha the source of tension but she loves her; Ethan she protects; Victor unnerves her.
+- [S2E9–10] Has a vision and falls into a coma; Boyd sees her chained in the dungeon. She wakes when Boyd destroys the music box.
+- [S3E5] Elgin confides in her about the Kimono Woman. [S3E7] Randall teaches her to drive. [S3E8] Vision of the dungeon at the ruins: Martin asks her to save Boyd; she has a seizure. [S3E9] Follows a child to the cellar with Tabitha.
+- [S3E10] Sees her father Jim just before the Man in Yellow kills him.
+- [S4E1] After Jim's death she is grieving, keeping her supernatural discoveries secret, and clashing with Tabitha. Uses the ruins to "story-walk" into the past with Randall's help; Randall pulls her back when danger comes.
+- [S4E3] Randall calls her "Storywalker".
+
+## Jim Matthews (Eion Bailey)
+- [S1E1] Julie and Ethan's father, Tabitha's husband. Wants to find a way out or contact the outside world.
+- [S1E1] Voice: talkative and analytical, tries to explain things aloud and fix them. Hopeful. Avoids emotional conversations with Tabitha. Protective.
+- [S1E3] He and Tabitha joke around by imitating creatures from Ethan's book (the Cromenockle).
+- [S1E4] Sometimes tactless and hostile to Victor, whom he blames for taking Ethan into the woods. [S1E8] Furious at Jade for scaring Julie; tells him to stay away from her.
+- [S1E4] His marriage with Tabitha is failing after Thomas died. [S1E6] Notices the house wiring has no wire and the lamps should not work.
+- [S1E7] Proposes the radio tower. [S1E10] Reaches a threatening voice on the radio.
+- [S3E2] The voice calls itself his dead son Thomas. [S3E10] Killed by the Man in Yellow. [S4E2] His body is found hanging in the barn with a message saying knowledge comes at a cost.
+
+## Tabitha Matthews (Catalina Sandino Moreno)
+- [S1E1] Mother of Julie and Ethan. Knocked out in the crash.
+- [S1E1] Voice: guarded and controlling, especially with Julie; evasive; resourceful and stubborn. Protective.
+- [S1E6] Blunt with people she dislikes: she does not hide her dislike of Jade. [S1E8] Shows real vulnerability to Julie for the first time.
+- [S1E4] Still mourning Thomas; marriage strained. Often keeps information from Julie. [S1E5] Writes questions on the wall, including whether they survived the crash.
+- [S1E6] Digs in the basement to see where the power lines lead. [S1E10] Falls into the caves and meets Victor.
+- [S2E10] Reaches the tower and is pushed out into the outside world. [S3E1–4] Meets Henry Kavanaugh in Camden, Maine, and returns to the Township in the ambulance.
+- [S3E10] Discovers she is Miranda's reincarnation. [S4E2] After Jim's death she lashes out at Jade, saying he should have been the one to die.
+
+## Ethan Matthews (Simon Webster)
+- [S1E1] Young son of Jim and Tabitha. Leg badly injured in the crash; he seizes inside the RV. [S1E2] First person to see the Boy in White.
+- [S1E1] Voice: earnest and curious, an old soul who reads a lot; says surprisingly wise things.
+- [S1E4] Befriends Victor and is loyal to him. He imagines that his dead brother Thomas went on a quest to save someone. [S1E8] Innocently tells Julie they are digging in the basement. [S1E10] Says Victor is fine because he has to finish his part of the quest.
+- [S3E4] Talks to the phone voice. [S4E2] Sees a vision of Jim, who tells him the "Lake of Tears" from his vision is real.
+
+## Boyd Stevens (Harold Perrineau)
+- [S1E1] Sheriff and de facto leader of the Township. A military veteran with tours in Afghanistan and Iraq.
+- [S1E1] Voice: calm authority, short practical sentences, gives orders. Protective of the town. Fraught relationship with his son Ellis.
+- [S1E3] Respects the rules but tries to spare Frank from the Box. No love lost between him and Donna.
+- [S1E4] Keeps his emotions in: he screams at his own mirror when alone.
+- [S1E5] Has a tremor in his left hand and tells his wife's grave. [S1E6] Confesses to Kenny that it is early-onset Parkinson's.
+- [S1E8] Killed his wife Abby when she had a breakdown and started shooting residents; estranged from son Ellis for it. They reconcile.
+- [S1E9] His old army nickname was Mr. Fish and Loaves: he made any resources stretch.
+- [S1E10] Trapped in a shaft. [S2E2] Given worm-like parasites by Martin. [S2E10] Destroys the music box.
+- [S3E9] His Parkinson's has progressed; wants Kenny ready to lead. [S3E1] Forced to watch Tian-Chen tortured.
+- [S4E1] Loses hope; Kristi and Ellis push him to lead again.
+
+## Ellis Stevens (Corteon Moore)
+- [S1E1] Boyd's son, lives at Colony House, estranged from his father. [S1E2] He paints.
+- [S1E2] Voice: quiet, dry humor, angry at his father, gentle with Fatima and welcoming to Julie.
+- [S1E10] Proposes to Fatima; [S2E10] they marry. [S2E6] Stabbed by Dale, saved by Boyd's blood.
+
+## Fatima Hassan (Pegah Ghafoori)
+- [S1E2] Colony House resident who makes newcomers feel safe. Ellis's girlfriend, later wife. [S1E10] Ellis first saw her when she was driving around lost for hours.
+- [S1E2] Voice: warm, witty and welcoming. Jokes to lighten heavy moments (the supermarkets here are terrible). Optimistic but has tearful moments. Believes in celebrating survival. Says there are no mistakes, only choices.
+- [S1E7] Marks a year in the Township.
+- [S2E7] Was told she could not have children. [S3E2] Craves rotten vegetables during pregnancy. [S3E7] Kills Tillie in a moment of lost control. [S3E10] Gives birth; the baby is Smiley reborn. [S4E10] Can transform into a creature.
+
+## Donna Raines (Elizabeth Saunders)
+- [S1E1] Leader of Colony House.
+- [S1E2] Voice: firm and blunt about the rules, protocol-minded but not cruel (she apologizes to Tabitha). Rivalry with Boyd.
+- [S2E1] Shoots out the bus tire to keep passengers in. [S3E6] Mourns Dale. [S4E6] Has a heart attack; Boyd saves her.
+
+## Kenny Liu (Ricky He)
+- [S1E1] Boyd's deputy, lives with his parents. [S1E2] His father Bing-Qian is killed.
+- [S1E1] Voice: friendly, earnest and loyal to Boyd. [S1E3] Grieving his father. [S1E10] Awkward and warm with Kristi; asks her to come with him when they go home.
+- [S1E8] Appointed sheriff while Boyd is away. [S2E4] Quits as deputy after learning Sara opened the clinic door. [S3E2] Learns his mother Tian-Chen has been killed.
+
+## Kristi Miller (Chloe Van Landschoot)
+- [S1E1] Paramedic who serves as the town's doctor. [S1E5] Separated from her fiancée.
+- [S1E1] Voice: calm and direct under pressure, rattled by the creatures but recovers; talks straight to Boyd.
+- [S1E10] Tells Kenny she is engaged and is confused about it. [S2E1] Marielle arrives on the bus.
+
+## Victor Kavanaugh (Scott McCord)
+- [S1E2] Longest-surviving resident, arrived as a child. Peculiar and guarded. Scares Julie at first.
+- [S1E2] Voice: odd, terse, cryptic; speaks as if he knows things he will not explain; kind to Ethan.
+- [S1E3] Counts his steps to the trees to see whether they move.
+- [S1E4] Carries a gun in his lunchbox. Digs graves near Colony House. Knows the farway trees.
+- [S3E1] His father Henry is alive in Camden; [S3E5] they reunite after forty years. [S3E8] Feels guilty for Miranda's death.
+
+## Jade Herrera (David Alpay)
+- [S1E1] Wealthy software developer whose car hit the Matthews' RV; his best friend Tobey is killed. Arrogant and abrasive at first.
+- [S1E3] Voice: sarcastic and quick, skeptical; treats it all as a game or an escape room at first. Under it he is grieving.
+- [S1E6] Barges into people's houses without knocking. Sees visions and symbols. Works with Jim on the radio.
+- [S1E10] Gives nicknames: "Tea Cup" for Jim, "Spark Plug" for Julie. Rolls joints.
+- [S3E10] Reincarnation of Christopher. [S4E5] Uses mushrooms to recall past lives.
+
+## Sara Myers (Avery Konrad)
+- [S1E2] Works at the diner. Kind on the surface (she brings Tobey water) but hears voices; kills Tobey and opens the clinic door. [S1E5] Accidentally kills her brother Nathan. [S2E4] Confesses to Kenny.
+
+## Father Khatri (Shaun Majumder)
+- [S1E1] Township priest.
+- [S1E3] Voice: gives long explanations and sermons; explains the rules and the Box; drinks with Kenny; nudges Boyd to lead. [S1E6] Theory: the town is a test, a "Book 74". [S1E7] Killed by a creature. [S2E4] Appears to Boyd as a vision.
+
+## Others
+- Tian-Chen Liu — [S1E1] Kenny's mother (Mrs. Liu), runs the diner. [S1E3] Warm and caring, mourning her husband. [S3E1] Tortured and killed.
+- Bing-Qian Liu — [S1E1] Kenny's father, elderly. [S1E2] Killed at the clinic.
+- Nathan Myers — [S1E1] Sara's brother, tends the animals. [S1E5] Killed by Sara by accident.
+- Tobey McCray — [S1E1] Jade's friend, a passenger in the car that hits the RV. [S1E2] Killed by Sara. [S1E6] Best friend since fourth grade.
+- Frank Pratt — [S1E1] Drunk husband of Lauren and father of Megan, blamed for their deaths. [S1E3] Put in the Box.
+- Trudy — [S1E2] Colony House resident who hoards clothes she likes and tries to steal.
+- Kevin — [S1E6] Colony House resident who falls in love with a creature. [S1E7] Killed by it.
+- Tom — [S1E1] Bartender.
+- Marielle Sinclair — [S2E1] Kristi's fiancée, a pediatric nurse; arrives on the bus. [S4E10] Killed by Smiley.
+- Randall Kirkland — [S2E1] Volatile bus passenger, conspiracy-minded. [S3E4] Tortured, then left alive. [S4E2] Helps Julie.
+- Elgin Williams — [S2E1] Bus passenger who had a prophetic dream. [S4E10] Killed by Sophia.
+- Tillie — [S2E1] Carefree older bus passenger. [S3E7] Killed by Fatima.
+- Bakta — [S2E1] Bus driver.
+- Henry Kavanaugh (Robert Joy) — [S3E1] Victor's father, from Camden, Maine.
+- Dani Acosta — [S3E4] Police officer who arrives with the ambulance.
+- Sophia — [S4E1] New arrival, actually the Man in Yellow in disguise.
+- Smiley — [S2E2] Creature with a permanent grin. [S2E6] Killed. [S3E10] Reborn.
+- Kimono Woman — [S2E7] Monstrous woman in a kimono seen by Elgin. [S3E6] Appears to Elgin; [S3E8] to Fatima.
+- Miranda — [S2E8] Victor's mother, who went to rescue the children. [S3E10] Tabitha's past life.
+- Christopher — [S2E5] Ventriloquist in Victor's childhood; [S3E10] Jade's past life. Jasper is his doll.
+- Dale — [S1E3] Difficult Colony House resident; [S2E6] Stabs Ellis; [S3E5] Dies in the bottle tree.
+- Clara — [S1E8] Colony House resident who moves to town after the attack.
+- Abby Stevens — [S1E8] Boyd's late wife; killed by him. [S1E10] Appears in visions later.
+
+============================================================
+# SPOILER TERMS
+============================================================
+- [S1E4] farway tree, farway trees
+- [S1E6] Book 74
+- [S1E7] radio tower
+- [S1E9] bottle tree
+- [S1E10] lighthouse, the bus, bus passengers
+- [S2E2] music box, Martin, worm-like parasites
+- [S2E8] cicadas, children in the tower
+- [S2E5] symbol book
+- [S3E1] Camden
+- [S3E10] Man in Yellow, past lives, reincarnation
+- [S4E2] Lake of Tears, story-walking, storywalker
+- [S4E7] straw dolls
+
+# SEASON 1 (2022)
+
+Overview: The Matthews family is trapped in the Township. They learn the rules of night, choose where to live, and get involved in the town's hunt for a way out. Sara's voices, Boyd's secret illness, the radio tower and the discovery of a lighthouse drive the plot. It ends with Boyd trapped in a shaft, Tabitha fallen into the caves, and a bus arriving.
+
+## S1E1 "Long Day's Journey into Night"
+Prologue. At dusk Sheriff Boyd walks down the street ringing a bell, the signal that everyone must be indoors. Lauren and her young daughter Megan wait for Frank, Lauren's husband and Megan's father, but he is passed out drunk somewhere else. An old woman appears at Megan's window and Megan opens it. The old woman is a creature, and both mother and daughter are killed.
+The Matthews family (Jim, Tabitha, teenage Julie and young Ethan) are on a cross-country RV trip. A fallen tree blocks their road, they take a detour, and it brings them into a small town in the middle of a funeral for Lauren and Megan. They stop to ask directions. Boyd tells them how to get back to the highway, but the road only loops them back into the same town.
+Another car (Jade and his best friend Tobey) collides with the RV and the RV flips. The sun is going down as Boyd, Kenny, Kristi (a paramedic), Father Khatri and Ellis race to the wreck. Ethan's leg is impaled by a table leg, Tabitha is knocked out, and Julie is panicked but unhurt: Boyd gets her out. Jade and Tobey are hurt; Tobey is taken to the clinic, where Sara looks after him.
+Kristi says freeing Ethan will take an hour and Kenny says there are 40 minutes until dark. Boyd and Kristi decide to stay with Jim and treat Ethan inside the RV with a talisman in the window, and Boyd refuses to let Julie and Tabitha stay: the woods are not safe after dark. Kenny, Ellis and Khatri take Tabitha, Julie and the unconscious Jade back toward town, but the truck's tires are shredded by a spike strip Kenny had laid earlier. They have to run on foot to Colony House as the light fails. In the RV Ethan starts seizing and Jim has to hold him down. When night falls Boyd looks out and sees dozens of creatures standing around the RV.
+Julie's part: she is terrified and confused, is pulled out of the wreck by a stranger, and is hurried through the dusk without anyone explaining anything. She has no idea yet what the creatures are.
+
+## S1E2 "The Way Things Are Now"
+Cold open in daylight: Kenny, covered in blood, chops furiously at a tree. Then the story goes back to the night before.
+In the RV Ethan stops seizing when he hears movement outside and a voice asks if they are all right in there. Jim thinks townspeople have come back to help; Boyd refuses to answer and physically holds Jim back. Jim asks what the creatures are. Boyd says he does not know, only that the talismans keep them from entering enclosed spaces as long as windows and doors stay shut. Ethan wakes and Kristi sedates him. Kristi is rattled by the sounds outside and Boyd calms her. Eventually they get the table leg out of Ethan's leg.
+At Colony House the group struggles through rain. Khatri drops the unconscious Jade, who hits his head on a rock. The guard at the door does not believe it is really them, Fatima tries to let them in, and the creatures reach the porch before Donna finally opens up. Following protocol, Donna has Tabitha and Julie tied up and Ellis ties Jade to a bed: newcomers know nothing and could bolt into the night. A resident named Trudy asks about the cars, tries to lift Jade's watch, and says Ellis is good looking. Donna later apologizes to Tabitha, cuts her loose, and explains how the town works and how everyone got there. Tabitha does not believe a word of it and tries to run; an armed guard stops her.
+Julie is approached by Victor, who frightens her. Fatima takes to Julie at once: she makes her feel safe and welcome and takes her to Ellis's room to see his paintings. Fatima tells her on that first night that if you climb high enough, even a nightmare can look like a dream.
+Kenny and Khatri drink together and worry about Boyd and Kristi; Kenny cannot find any more bodies. At the clinic, Sara hears voices, kisses Tobey, and kills him with a scalpel. Then she opens the clinic door and creatures kill Kenny's father Bing-Qian and his caretaker. In the morning Boyd and Kristi bring Jim and Ethan to town. At Colony House, Ethan sees a boy dressed in white through a window.
+Julie's part: tied up on her first night, scared, then treated kindly by Fatima and Ellis. First contact with Victor (unnerving) and with the idea that this place is real.
+
+## S1E3 "Choosing Day"
+Morning at Colony House. Victor counts his steps from the house to the trees to check whether the trees have moved. Ethan asks him about the boy in white and Victor just says he is counting. Fatima finds Julie sitting on the porch, offers her berries (Julie declines but notices they grow their own food); Fatima jokes that the supermarkets around here are terrible and tries to cheer her up. Inside, Jim brings their belongings from the RV. Jim and Tabitha are playfully imitating creatures from one of Ethan's books (the Cromenockle) when Julie walks in. Donna then announces that Father Khatri has come to explain the Choosing Ceremony: every newcomer must choose between Colony House (up the hill) and the town, and that choice is final. Khatri offers to take the adults on a tour. Julie wants to go along, but her parents tell her to stay and look after Ethan, which annoys her.
+On the tour Khatri shows Jim and Tabitha the house in town where they would live (Frank and Lauren's old house; one bedroom smells of blood), and the Box, the town's only punishment: a person is locked in overnight and the creatures deal with them. He describes in graphic detail what happened to Lauren and Megan because Frank did not follow the rules. Jim and Tabitha watch, disbelief fighting reality.
+Jade decides it is an elaborate real-life game. He wanders from Colony House to the diner, interrogating locals, and refuses to believe Tobey is dead until Kenny unwraps the shroud and shows him Tobey's mutilated face; Jade breaks down. Kenny takes him to stay a few days with his parents. Tian-Chen (Mrs. Liu) is crying over a shrine to her husband Bing-Qian when they arrive.
+Boyd and Frank walk in the woods to Megan's favorite spot. Boyd does not want to put Frank in the Box; Khatri insists the rules must be followed. Boyd offers Frank a talisman and a chance to make a life in the woods. Frank says he deserves the Box and makes Boyd promise to get everyone home.
+At the ceremony Frank thanks Boyd for trying to spare him but says the only two things he loved are gone and he just wants to see them again. Jade, still sure it is a show, applauds and laughs until Boyd restrains him and makes him choose; he threatens everyone before Kenny leads him away. Jim, Tabitha and Ethan pick the town. Julie picks Colony House, a flippant teenage answer that starts an argument. The rule is final. Boyd reassures the parents: his son will be up there and she will be looked after. That evening the Matthews (minus Julie) move into their house, and Jim and Tabitha read to Ethan. At Colony House the residents raise a toast to welcome Julie. Boyd watches from his window as the creatures come for Frank in the Box. Frank first tries to prepare to fight, then breaks down and sits on the floor, and the creatures break in.
+Julie's part: she is shut out of the tour, feels talked down to, and deliberately chooses to live apart from her parents. Fatima and Ellis and the Colony House residents celebrate her arrival. She is thrilled and a little scared.
+
+## S1E4 "A Rock and a Farway"
+Flashback: as a child, Victor sees the corpses of many townspeople, then a boy in white appears and invites him to play. In the present Ethan recognises that boy from one of Victor's drawings. Kenny shows Jade proof that the town has no fixed location, and Jade takes a radio that only produces static. At Colony House, Julie is uneasy that everything is shared.
+Fatima and Julie take laundry off the line; Fatima explains that Trudy hoards clothes she likes. Tabitha arrives with a sweater of Julie's and says the family misses her. Julie admits she misses them too. Tabitha suggests Julie come home, they can tell Donna it was a mistake. Julie is angry: her parents always treat her as though she has made a mistake and has to admit she was wrong. Tabitha says they have to stick together here. Julie scoffs and reveals she already knew her parents were going to divorce and that the road trip was a last hurrah before they told the kids. She tells her mother to stop treating her like a child. Tabitha admits Julie is right and says she and Jim love both kids, but Julie cuts her off: Thomas is dead, but they still have two other kids, why aren't they enough? Tabitha says it is not that simple, and Julie walks away, wiping her tears. That night Fatima and Ellis surprise Julie with a new bed of her own, telling her there are no mistakes, only choices, and Julie is delighted. Fatima then gives her the sweater from her mother.
+Ethan takes to Victor. Victor takes him into the woods to look for the boy in white and shows him a hollow farway tree that sends objects elsewhere. Jim and Tabitha search for Ethan and are surrounded by wild dogs, until Victor scares the dogs off with a gun. Later Jim tells Boyd that Victor takes Ethan into the woods and carries a gun in his lunchbox. Boyd promises to speak to Donna, admits things have been chaotic since the Matthews arrived and invites them to dinner. Ethan tells Jim that he should not have treated Victor that way; Jim tries to apologize but Ethan asks to be left alone.
+Boyd trims his beard, then screams at the mirror for a few seconds. At the diner dinner he and the Matthews talk about Julie and how they cope; Tabitha thanks him for what he did and Boyd says in town people take care of each other. Khatri urges Boyd to accept his role as leader; Boyd is edgy and angry at the priest after Frank's death.
+At the diner Sara has a seizure after a vision urging her to kill Ethan. Victor later digs graves near Colony House.
+Julie's part: her first real fight with her mother; she is hurt, proud and stubborn. Fatima and Ellis become her family: they give her a place of her own and tell her she is allowed to choose.
+
+## S1E5 "Silhouettes"
+Sara recovers at the clinic and Kristi keeps her company. Boyd suspects the town can trigger physical reactions, since both Sara and Ethan have had seizures, and Tabitha notes that Ethan's leg is healing very quickly. Boyd speaks to his wife's grave: he asks for a sign, admits his left hand shakes, and says he has an idea that could get everyone home but that if it fails it will leave everyone worse off. At the diner he tells Kristi that nothing that happened with Sara is her fault, and the jukebox switches on: Boyd takes it as his sign.
+Sara asks Kristi if she would do one terrible thing if it meant everyone could go home. Kristi says yes, because she left a fiancée behind.
+Jade wanders with the radio to the bar, thinking that working out where they are is the first step to getting home. He and Jim each wonder if they died in the crash and are in purgatory. Jim, Tabitha and Ethan start writing their questions on a wall; Tabitha writes that they may not have survived the crash.
+At Colony House, Fatima finds Julie writing a list of everyone who will be wondering where she and her family are: worse for them not knowing. Fatima admits she did the same when she arrived and asks who is on the list. Julie names her grandparents and friends. Fatima teases her about boyfriends or girlfriends; Julie says there is no one like that, and that this is probably a good thing since it means one less person losing their mind over her. Fatima decides Julie needs fun and tells her to be downstairs in five minutes. She and Ellis take Julie to the Brundles, a hidden lake, to forget for a few hours. Julie smiles and laughs.
+Meanwhile Sara takes a scalpel from the clinic, goes to the Matthews house and plays with Ethan. She takes him and Tabitha to the barn to see the animals, locks Tabitha inside and tells Ethan she likes him, and that what happens next will save everyone like in one of his stories, and that he will be the hero. Ethan says he wants his mom. Nathan, who has confessed to Father Khatri, arrives and restrains his sister so Ethan can get away; in the struggle Sara accidentally slashes Nathan's throat and weeps. Julie, Fatima and Ellis are coming back from the lake when Ethan runs up crying for his sister. Jim frees Tabitha, Julie arrives with Ethan, and a crowd gathers. Kristi checks Nathan, but he is dead. Sara runs into the woods.
+Julie's part: she opens up about her family and her fear for the people back home, has a carefree afternoon with her new friends, then is dragged back into terror when Ethan runs to her.
+
+## S1E6 "Book 74"
+A montage: Boyd and Kenny bury Nathan, Jade builds an antenna, Tabitha packs up belongings, Julie collects flowers from the Colony House porch, and Khatri gives a sermon. Julie finds the bouquet already arranged; she puts it in a pot and Fatima compliments her eye for flowers.
+Khatri keeps Sara gagged and tied in the church basement. He tells her there is not a single Bible in town, and explains his theory: the Bible has 73 books and the town might be the 74th. He removes her gag and tells her, despite what she has done, she could still do something good, and Nathan would want that. Sara tells him the voices know things before they happen, such as the two cars arriving on the same day. She draws a picture from what the voices say: Khatri burying a bag. He digs it up in a field and finds a bottle of alcohol, bloodstained clothes and a Cosmo chocolate bar, matching her drawing. Stunned, he realises the voices are real.
+Boyd tells Kenny he plans to walk into the woods with a talisman to search for a way home. Kenny, who has just lost his father and idolises Boyd, reacts badly and says it is suicide. Kristi tells Boyd that Kenny needs a father figure and explains where Boyd went wrong with Ellis. Boyd confides to Kenny that he has early-onset Parkinson's and wants to help find the way home while he still can. Boyd and Kenny play catch; Kenny offers to carve a bat so they can play proper baseball when Boyd returns.
+Jim tells Tabitha the cords in their house have no wire inside, the outlets are fake, and none of the lamps should work. Jade barges in without knocking and sarcastically asks if he should take his shoes off. Tabitha does not hide her dislike of the man whose crash nearly killed her family. Jade points out that he was not driving, and that his best friend since fourth grade is dead, so they should call it even. Jade wants Jim's help with an experiment: they strip Jade's car for parts and attach an antenna high in a tree (Jade admits he has vertigo). Jim gets static on the radio. Jade draws a strange symbol he keeps seeing and Mrs. Liu shows him a notebook in a storage room with the same symbol. Jade has vivid hallucinations.
+Tabitha finds a bracelet she made for Jim when they began dating, in the storage room at the diner. She finds the walls of the house bare to the studs, Ethan hauling dirt from the basement, and she and Jim decide to keep digging to find where the wires go.
+At night Kevin, a Colony House resident, opens a curtain and sees a creature in the form of a beautiful young woman on the balcony with a bouquet. It flatters him and asks when it can come inside.
+Julie's part: quiet and domestic, she collects flowers and is complimented by Fatima. Life at Colony House is becoming normal to her.
+
+## S1E7 "All Good Things..."
+Khatri tells Boyd about Sara and the voices and says she and he should join Boyd's expedition. He is excited: he thinks this is why he was told to get back into the car. Boyd calls him a madman. Jim proposes building a radio tower with most of the town's resources; he and Tabitha find comfort in each other and keep digging in the basement. Jade finds a photo in the notebook and Tian-Chen recognises a young Victor.
+Colony House prepares a party for the first anniversary of Fatima's arrival. Julie finds it odd to celebrate the day Fatima got stuck; Fatima says they are celebrating survival, and it is nice to have a party once in a while. She finds a sweater she wants to keep away from Trudy. Julie tells Fatima she makes the Town seem almost normal, that she is special. Fatima is touched and says they are all special, even Trudy. Ellis wants to pregame; both decline and Fatima tells him to go easy. He teases them and leaves calling for Victor. Julie asks if Ellis is okay.
+Kevin opens a window for the creature he has been talking to; it kills him and leaves the window open. Creatures swarm Colony House and kill many. Some residents escape in a van. Ellis and Fatima survive: Fatima closes the doors of the foyer, guessing that a talisman inside the room will protect them, based on what Boyd said about the RV. It works; creatures knock and taunt them. Ellis asks how she knew; Fatima admits, tearfully, it was a guess. They tell each other they love each other.
+Victor and Julie run into the woods. Victor leads Julie to a hollow farway tree and tells her to go in and warn Ethan that "it" is starting. She does not understand, but Victor says Ethan will and that he will be right behind her. Julie climbs in and comes out in a root cellar. The van reaches the sheriff's station and Boyd and Khatri let survivors in, but a creature kills Khatri.
+Julie's part: the happiest evening she has had here turns into a nightmare. She has to trust Victor, whom she barely knows, and enter a tree with no explanation.
+
+## S1E8 "Broken Windows, Open Doors"
+The morning after the Colony House attack, Kenny tells a bloodstained Boyd that he has already set most of the surviving Colony House residents up in town (Clara and others); graves for about ten unnamed residents are shown. Boyd packs for the woods and Kenny asks him to speak to the town first, but Boyd tells Kenny to do it, and goes to fetch Sara. Kenny warns that tension is rising; townspeople try to raid the diner.
+In flashback, the Stevens family arrives: Boyd on the brink of retirement, his wife Abby, and their son Ellis, driving through town. They see "SAVE US" painted on the barn and Khatri runs in front of the car; they follow him underground with Donna and others to hide. The next day Boyd takes charge, foraging and finding livestock. Abby's mind deteriorates. Boyd spends a night in the woods and learns in a cave that talismans keep creatures out. When he returns Abby is convinced this is a nightmare and that the way home is to wake everyone up; she shoots townspeople, then prepares to shoot Ellis, and Boyd kills her. Ellis has kept his distance from his father ever since.
+In the present Fatima urges Ellis to make peace with his father before it is too late. Father and son reconcile in the woods and say I love you. Sara asks Boyd if he thinks she is a monster; Boyd says he does not care: she is alive only because Khatri thought she could help everyone home, and if she proves Khatri wrong he will kill her himself.
+Julie, back with her family after the root cellar, tells them what happened the night before and breaks down, asking what is happening to them. Ethan innocently says they are digging a hole in the basement to find the source of the electricity. Tabitha comforts her: things will be okay. Tabitha, for the first time honest and vulnerable with her daughter, tells her that a piece of her broke the day Thomas died and that she still struggles with Jim, though she does not know if they will still divorce.
+Jade barges in asking where Victor is; Jim furiously pushes him outside and tells him to stay away from his daughter. Jade admits Jim is being a protective father. Jim scolds him for making him climb a tree and then running away, then tells him he got some static on the radio and thinks it might work above the tree line. They ask Donna if the tower can go on Colony House's roof. Jim rallies the town behind the radio tower. Kenny is now acting sheriff.
+Julie's part: she is shaken and grieving for the Colony House residents; back home with her parents, she lets herself cry, and gets the most honest talk of her life with her mother.
+
+## S1E9 "Into the Woods"
+Boyd and Sara reach the cave and use it as a reference point. Farther than Boyd has ever gone, they find a tree hung with small bottles, and Sara has a seizure. In town the work on the radio tower continues but there is not enough power; Jim's confidence begins to wane, and Tian-Chen gives Jade an idea about using electricity from the town's houses. Donna unravels after an unexpected tragedy. Kenny and Kristi share a moment; he has been reading a book she lent him. Ethan, the old soul of the family, tells them they have found their rhythm as a family.
+Sara wakes in a tent. Boyd shows her the bottles: each holds a scrap of paper, one dated 1864. Sara says the new voice was a woman's; it told her to tell Boyd his plan is a mistake and that there are worse things in the forest than the creatures. She then calls Boyd by a nickname only Abby used, and an unseen force attacks the tent. When it stops, the tent lights up from outside and a loud horn sounds.
+Julie's part: she helps where she can; the family is closer than it has been in a long time.
+
+## S1E10 "Oh, the Places We'll Go"
+Jade shows the Matthews that their lamps produce electricity with no source. With enough lamps and wire they could turn Colony House into a battery for the tower. He and Jim ask the town at the diner to gather wire. Julie scolds Jade for calling her father "Tea Cup"; Jade promises to stop, but says he will call her "Spark Plug" from now on.
+Julie tells Jim she is optimistic. Ethan said they were supposed to come here, and at home they had stopped talking but now they are really together. She recalls what Fatima told her on her first night about nightmares looking like dreams if you climb high enough. She invites Jim to help dig in the basement and they go down together without noticing that the lights are starting to flicker. Ethan says it would be great if Victor were here; Jim assures him Victor is okay. Ethan says he knows Victor is fine, because he has to finish his part of the quest.
+Kenny asks Kristi to come with him when they go home; she tells him she is engaged, and later admits she is confused. Ellis proposes to Fatima at the spot where he first saw her, driving around lost for hours: he does not remember who he was before her and does not want to find out who he will be without her. She accepts. Jade has a quiet scene with Mrs. Liu about grief. Tom, the bartender, tells Tabitha that many people have come up with clever ways to escape and they all end up at his bar; he lets her take a pickax.
+In the woods Boyd and Sara leave the tent and find everything covered in webs. Boyd hears a woman's voice and runs to it: he finds Abby covered in cobwebs, and she grabs his arm; he is bitten by many spiders. Delirious, he falls in pain and says the voice is probably right, they will die in the woods. Sara reminds him of the light; when she mentions Ellis he gets up.
+The tower goes up on the roof of Colony House and gets power and a signal. Jim invites Julie to make the first transmission; she tells him to do it. Donna warns a storm arrives in ten minutes but Jim insists on working. On the radio a voice asks if he is Jim Matthews and says Tabitha should not be digging in the basement. Jim runs for town. Julie watches, confused, and Donna cannot answer her questions. Bulbs burst and connections short out.
+Tabitha breaks through the basement floor and falls into a cave where Victor is waiting: they have to move, because this is where the creatures sleep. Boyd and Sara see the light and hear the horn coming from a lighthouse. The Boy in White appears and tells Sara to put Boyd into a nearby farway tree; she does and Boyd is transported to a tight stone shaft where he is trapped. In the town, a bus arrives.
+Julie's part: her happiest talk with Jim; she is close to her father and tries to keep everyone hopeful, then watches the joy of the tower turn into panic.
+
+# SEASON 2 (2023)
+
+Overview: New arrivals from the bus (Marielle, Randall, Elgin, Tillie, Bakta and others) strain the town's food and trust. Boyd returns from a dungeon carrying worm-like parasites and Sara comes back to the church. An entity tied to a music box unleashes cicadas and comas. After Boyd destroys the box, Tabitha is pushed out of the tower into the outside world.
+
+## S2E1 "Strangers in a Strange Land"
+A passenger from the bus warns of danger, and residents herd the passengers into a fortified building. Donna tries to convince the driver, Bakta, of the danger; when Bakta tries to leave, Donna shoots out a bus tyre and some passengers scatter. Jade explains the symbols in the notebook to Ethan. Jim, Tom and two passengers try to rescue Tabitha from the hole, but the house collapses and traps them. Victor and Tabitha explore the tunnels and find a forest, escaping just as its creatures wake. With help from an unseen stranger, Boyd climbs out of the shaft and finds him chained to a wall in a dungeon: a ragged, starving man who begs Boyd to kill him.
+
+## S2E2 "The Kindness of Strangers"
+Boyd refuses and tries to free the man, whose name is Martin. Martin warns him that the forest creatures are only the visible edge of something much worse. A music box on the floor begins playing by itself. Martin grabs Boyd's arm, passes worm-like parasites into him and dies. Boyd suddenly finds himself back in the forest. In town, Kristi tries to reconnect with Marielle, her girlfriend and one of the bus passengers. That night Donna makes most passengers shelter at the diner while the creatures kill anyone outside, including Tom, who is trapped under the collapsed house while Jim watches in horror. Boyd makes it out of the forest and meets Victor and Tabitha, who sheltered in an old trailer.
+
+## S2E3 "Tether"
+Ellis confronts Boyd about being gone so long and losing Sara, and says Fatima seems to be losing a piece of herself. Jim recovers in hospital; Tabitha tells him the wires he laid are not connected to anything. Boyd calms a standoff with Randall and other passengers, who are taken up to Colony House. Kenny, checking traps, and Ellis, picking flowers, find Kelly, a bus passenger, staked to a tree with a rod missing from one of the traps. Victor's violin goes missing and he confronts Jade about the symbol, then storms off. Kristi and Marielle start discussing their relationship until Kenny arrives to get help for Kelly. Fatima takes Elgin to the Brundles, a place he saw in a dream on the bus. Kristi tells Kelly she will not survive. Tabitha sees strange children while she and Julie get ready to move in with the Lius. Ethan is working on a sculpture puzzle and Tabitha sees it resembles the stone pile she saw in the tunnels. Kenny finds Sara in the church basement.
+
+## S2E4 "This Way Gone"
+Flashback to the Lius' arrival. Kenny takes Boyd to Sara at the church; Boyd tells Kenny about her unique connection to the town. Julie and Ethan visit Colony House, where Julie notices Elgin staring into space and starts a conversation with him. Kristi and Boyd discuss how his Parkinson's has progressed and the injuries he took in the forest. Jim tells Tabitha about the radio voice and his feeling of being watched. Boyd has a vision of Khatri, who talks with him about Sara and Kenny. Jim and Donna discuss the voice. Randall has another outburst at Colony House and Donna puts him out in the bus. Sara tells Kenny she opened the clinic door; Kenny confronts Boyd and quits as deputy.
+
+## S2E5 "Lullaby"
+Randall spends his first night in the bus. Jade sees a vision of Christopher holding the book of symbols, which begins to drip blood. Jim and Tabitha confront Boyd and Sara at the church. Ethan locks himself in his room after overhearing his family talk about Sara, then asks to see her. Kristi and Marielle bond. Sara sneaks into the house she shared with Nathan and is turned away by the current occupants. Victor shows Jade the car graveyard and asks him to play the violin, and later tells Jade about Christopher. Elgin and Sara talk at the church. Sara goes to the diner to collect her and Nathan's belongings and is confronted by Kenny. Kristi gets a haircut. Tabitha is confronted by chanting children. Jim tells Boyd about the radio voice. Marielle sneaks morphine. Boyd asks Tian-Chen to talk.
+
+## S2E6 "Pas de Deux"
+Boyd talks to Tian-Chen about Sara being in town. Dale argues that the bus passengers should not get food during shortages; in the argument he stabs Ellis. Elgin drives Ellis to the clinic with Fatima at night. Boyd is needed to give blood, so he goes out at night to get the creatures to take his worm-like parasites. He passes them to the creature known as Smiley, which dies in the process. Fatima asks Kristi for a pregnancy test. Ellis's transfusion works. Kenny admits they should have believed Boyd about the forest and the parasites under his skin.
+
+## S2E7 "Belly of the Beast"
+Kristi prepares an autopsy of the creature. Jim and Tabitha argue about whether Ethan should spend time with Victor. Randall flies his drone over Jim. Victor is unkind to Ethan and says bad things happen to his friends. Jim tries to persuade Randall that he could help find a way out. Marielle starts withdrawal. Kenny wonders where the worms have gone. Jade admits his vision to Tabitha. Jim tells Randall his theory that the place is an experiment; Randall asks whether Jim has thought about who might be in on it. Marielle dreams the creature is waking and the music box is playing. Fatima tells Donna she had been told she could not have children. Kristi finds the creature dry inside except for bile, which they extract. Elgin tries to recall an important detail from his dream, runs a bath, hears the music box, and is apparently held underwater by a monstrous woman in a kimono.
+
+## S2E8 "Forest for the Trees"
+Kenny dreams of the phone ringing at home. A voice on the line chants a warning: they touch, they break, they steal, and no one here is free. He then sees cicada-like creatures come out of a cooking pot. Randall starts fuelling fears of a conspiracy, suggesting residents may be part of the captivity. Tabitha shows Jade the tunnel entrance where she saw the symbol and chanting children. Victor does not tell Jade everything about the symbols, because people who look for answers do not come back. Boyd and Kenny burn the creature's body in the basement after finding no bugs inside. Victor takes Tabitha to the car graveyard and shows her his drawings, triggering a flashback to his mother and sister leaving him in the cellar. The drawing of a tower is where Victor says his mother went to rescue the children. Boyd and Kenny hear cicadas as Reggie, a resident, runs from his house screaming. Jim finds Donna tied to a tree in the forest and learns Randall did it to test his theories.
+
+## S2E9 "Ball of Magic Fire"
+Boyd and Kenny learn that the cicadas killed Reggie's wife in her sleep; before dying she repeated the chant. Boyd organises residents to go door to door telling everyone to stay awake. Boyd catches Randall holding a knife to Jim. Kenny agrees to keep Sara at the sheriff's station. Reggie is brought to Colony House and warns everyone to stay awake. Kristi and Marielle settle in at Colony House. Boyd, Donna, Jim and Randall spend the night in the RV. The creatures come out of the forest and stop short as music from the music box plays over the radio. Randall panics, breaks the RV window, runs into the woods and is attacked by cicadas. Boyd, Jim and Donna escape in the van. In withdrawal, Marielle sees cicadas and falls into a coma. Elgin tells Boyd and the others about a dream in which the Boy in White gave a rhyme: they come for three unless the melody is stopped. Bakta says her grandmother sang a nursery rhyme that combines the two phrases. Julie also has a vision and falls into a coma.
+
+## S2E10 "Once Upon a Time..."
+Donna recovers Randall, who is in a coma. Sara tells Boyd he caused all this by unknowingly releasing an entity, and that he must destroy the music box. After Ellis and pregnant Fatima marry, Boyd returns to the ruins and finds himself in the dungeon again, where he sees Julie, Marielle and Randall chained and tortured by something unseen. He goes to destroy the box, sees a vision of Abby who tells him fighting the entity only prolongs everyone's suffering, ignores her and smashes the box. The prisoners wake from their comas and the immediate threat seems to end. Jade searches the tunnels and sees seven children chanting at an opening in the ceiling that matches the symbol he keeps seeing. Victor takes Tabitha to a tree that transports her to the tower, which she believes holds imprisoned children. At the top, the Boy in White apologises, says it is the only way, and pushes her out a window. Tabitha wakes in a hospital in the outside world, having been found on a trail three days earlier.
+
+# SEASON 3 (2024)
+
+Overview: Tabitha is in the outside world (Camden, Maine) and meets Victor's father Henry, while in the Township the crops rot, Tian-Chen is killed, and Fatima's strange pregnancy escalates. Tillie and Dale die, Elgin serves the Kimono Woman, and Smiley is reborn. The finale reveals past lives and the Man in Yellow kills Jim.
+
+## S3E1 "Shatter"
+In the outside world, Tabitha finds she is in a hospital in Camden, Maine. Confused about how she got there, she sneaks out. She finds an address on the bottom of Victor's lunchbox and goes there, where she meets Henry Kavanaugh, Victor's father. In the Township, Jim and Kenny go looking for the lighthouse where Tabitha vanished and find a previously unknown settlement, where they camp for the night. Donna finds the crops at Colony House have all rotted, leaving only farm animals to eat. With supplies running low, several townspeople including Randall try to steal animals but Boyd talks them down. That night the creatures let the animals out of their pens to lure people from their homes. Jade and Victor save many of the smaller animals while Boyd and Tian-Chen take a cow back to the barn. After Boyd hangs a talisman, creatures already hiding in the barn are revealed; they handcuff Boyd and force him to watch them torture Tian-Chen to death.
+
+## S3E2 "When We Go"
+Jade goes into the barn and finds Tian-Chen's mutilated body and Boyd, handcuffed to a pillar and muttering hysterically; he frees him. Jim and Kenny find fresh vegetables growing near the settlement and take some home, and Kenny learns his mother is dead. Kristi and Jade prepare Tian-Chen's body for the funeral as Kenny asked. Fatima has pregnancy complications; Marielle examines her at the clinic and finds her badly malnourished. Back at Colony House, unable to eat normal food, Fatima impulsively eats rotten vegetables and feels satisfied. In the outside world, Henry shows Tabitha paintings by Victor's mother Miranda that show the Township. He says Miranda claimed to have visions and to have been chosen to free the children held in a tower, which makes Tabitha wonder if she was chosen too. After the funeral, Boyd asks Ellis to help capture a creature so they can learn about them. At home, Jim hears the phone ring, and the voice says it is his dead son Thomas.
+
+## S3E3 "Mouse Trap"
+The voice on the phone taunts Jim about his children's safety, and he becomes erratic. Tillie catches Fatima eating rotten vegetables and offers a tarot reading to ease her fears about the baby, but a crow smashes into the window. Kenny leads Jade, Kristi and Dale to the settlement for more food. Jade grows paranoid after visions and tries to run back to town although he would not make it before dark. Kristi tries to stop him and her leg gets caught in a bear trap until Kenny, Jade and Dale free her. In the outside world, Tabitha tries to decipher Miranda's paintings, and Henry shows her a copy of the bottle tree in his backyard, like the one near the Township. Henry says Miranda's visions began at the original bottle tree; while they drive there, another vehicle hits them. Tabitha wakes in an ambulance beside the unconscious Henry, and a fallen tree soon blocks the road.
+
+## S3E4 "There and Back Again"
+In the Township, Ethan talks to the phone voice, which says Tabitha will need rescuing. Victor tells Sara that as a child he collected the belongings of dead townspeople and tried to use them to remember the past. Camping at the settlement, Kenny, Jade and Kristi remember Tian-Chen and what she meant to them. Randall agrees to help Boyd capture a creature and says they usually follow routines but were strangely missing that night. The ambulance arrives in the Township, where the creatures set a trap and kill the drivers. Dani Acosta, a police officer with the ambulance, is chased to Colony House and accidentally shoots a resident named Nicky. Jim and Tabitha are reunited and, with Boyd's help, reach Colony House with Henry in the ambulance, but they have to leave Randall behind when creatures surround him. Despite Marielle's efforts, Nicky dies from the gunshot, and Fatima, alone, drinks her blood on impulse. After torturing Randall, the creatures leave him alive outside Colony House.
+
+## S3E5 "The Light of Day"
+Randall is brought into Colony House and furiously accuses Boyd of abandoning him to die. Kenny's group comes back in the morning and Kristi goes to the clinic to recover alongside Randall. Victor is upset after Donna tells him his father is alive; she later shows Henry Victor's room. A town meeting at the diner, stirred up by Dale, turns most of the townspeople against Boyd, and they demand to be taken to the bottle tree so they can escape as Tabitha did. Acosta apologises to Boyd for shooting Nicky but he says she only made things worse. Elgin confides in Julie about his visions of the Kimono Woman and they find a polaroid camera. Ellis catches Fatima eating the rotten vegetables and she admits something is wrong with her baby. After forty years apart, Victor and Henry meet again in an emotional reunion. Tabitha and Jade talk about their visions of the children at the bottle tree until Dale arrives and enters it despite warnings. He is teleported inside the walls of the town's empty pool and dies, and Boyd berates the townspeople for turning on him.
+
+## S3E6 "Scar Tissue"
+Jim and Tabitha argue about the choices they have made since arriving, and Jim leaves to be alone. The ambulance's medical supplies are moved to the clinic, including a portable ultrasound. Marielle changes Randall's bandages and invites him to live with her and Kristi so he isn't alone. Ellis tells Boyd he is worried about Fatima; she lets Kristi do an ultrasound, and they find she is not pregnant. Donna mourns Dale, entombing his body in stones, and Kenny asks to move into Colony House. Victor insists on going alone, but he and Henry explore the tunnels and find Jasper, a ventriloquist dummy belonging to the former resident Christopher; they wake some creatures and run. Elgin photographs Colony House residents and sees the Kimono Woman, who says she can help everyone go home. Jade finds a second bottle tree, sees a vision of Tom, and learns the bottles from both trees contain the same numbers. Tabitha asks Jade if she and Ethan can help, and notices that Jade's drawings of the settlement match a recurring childhood nightmare of hers.
+
+## S3E7 "These Fragile Lives"
+Fatima admits her cravings to Kristi, who thinks it is a psychosomatic pregnancy; Fatima insists it is real and her cravings are getting stronger. Fearing Fatima could endanger Colony House, Donna tells Boyd she must leave. Victor becomes obsessed with getting Jasper to talk and goes to Sara for help. Elgin's camera produces a polaroid of the cellar; he searches it and finds a hidden door with a corpse behind it. Acosta questions Kenny about the Township and says she distrusts Boyd. She breaks into the sheriff's station to get her gun back and argues with Boyd, who returns it unloaded. Jade, Tabitha and Ethan go to the settlement where Jim gathers food and find the painted rocks from Tabitha's nightmares; Jade theorises she was meant to find the Township. Randall begins teaching Julie to drive until they come to the ruins Boyd found before. Ellis tells Tillie he fears losing Fatima and she promises to help. Fatima then has intense pain at the greenhouse, is comforted by Tillie, but loses control and stabs her to death.
+
+## S3E8 "Thresholds"
+After Tillie's body is found, Boyd takes Fatima to an empty cabin and pretends to know nothing about it. Acosta and Kenny question everyone while Donna and many others accuse Sara. Alone, Fatima sees the Kimono Woman. Jim confronts Jade at the bar, furious that he brought Tabitha to the settlement, and a hungover Henry uses his own experience to calm Jim down. At the ruins, Julie has a vision of the dungeon where Martin asks her to save Boyd from the mineshaft, and she has a seizure. Sara and Tabitha help Victor remember the day he saw Jasper speak: Christopher was talking to the Boy in White, who explained where the bottle tree came from, which led to Miranda's death when Victor told her. Boyd tells Donna Fatima killed Tillie, and Donna tries to make Boyd and Ellis see that Fatima is now too dangerous. Elgin follows visual instructions from the polaroids his camera makes and finds the cabin, which Boyd and Ellis later find empty. Elgin secretly leads Fatima to the cellar and locks her behind the hidden door.
+
+## S3E9 "Revelations: Chapter One"
+Boyd and Ellis look for Fatima until Boyd has an episode where his body freezes and he has to stop. Elgin feeds Fatima his blood, which she accepts hungrily, and her pregnancy accelerates. Victor, convinced he got his mother killed, sets out to fell the bottle tree, and the Boy in White blocks him. Sara hears the voices in her mind say Fatima has little time. Knowing how much Fatima means to the residents, Donna calls a town meeting at the reopened diner and people pair off to search. Boyd tells Kenny his Parkinson's has progressed and Kenny must be ready to lead. Elgin tries to convince Ellis that Fatima's disappearance is a good thing, and Ellis grows suspicious. Trapped, Fatima finds a hidden hatch in the floor, but the Kimono Woman appears and holds her down to keep her silent. Tabitha has a vision of a child; she and Julie follow it to the cellar and find Victor inside, and Tabitha sees Miranda's death and is distressed.
+
+## S3E10 "Revelations: Chapter Two"
+Ellis realises Elgin knows where Fatima is; Boyd confines and questions him at Colony House. Elgin admits he has been in contact with the Kimono Woman and believes Fatima's baby will set them all free. Victor takes Henry to Miranda's grave and admits his guilt. Boyd interrogates Elgin violently, and Sara joins and forces out Fatima's location. The Kimono Woman helps Fatima give birth and vanishes with the amniotic sac as Boyd and Ellis arrive. Fatima explains that the creatures were the town's first residents, who gained immortality by sacrificing their children. Boyd goes down the hatch and sees Smiley reborn. Elsewhere, Jim, Tabitha and Jade work out that the bottle tree's numbers are musical notes; playing them calls up children who trigger memories of past lives, and Tabitha and Jade learn that they once died as Miranda and Christopher while trying to save the children. Jim then meets Julie, before a man in a yellow suit appears and rips out his throat.
+
+# SEASON 4 (2026)
+
+Overview: After the Man in Yellow kills Jim, the town is shaken. The Matthews family grieves and Julie starts story-walking into the past. A new arrival called Sophia is really the Man in Yellow in disguise. Jade and Tabitha's past lives lead Boyd's people to attempt a dangerous plan: uproot the bottle tree and dig up the children's bones. It costs lives (Marielle, Elgin), Fatima becomes a creature, and Sophia gathers the town's talismans.
+
+## S4E1 "The Arrival"
+Right after killing Jim, the Man in Yellow tells Julie she cannot change the past however hard she tries, and Julie vanishes; Jim dies, and the Man in Yellow says he will never see what is coming for people. A lone pastor finds the fallen tree on the road. Jade urges Tabitha to tell the town what they learned about past lives, but she refuses, doubting it is real. Kenny goes to find Boyd at the caves and both run into Smiley; Boyd explains Fatima gave birth to him. Then the pastor's car crashes into the sheriff's station with a woman named Sophia. Boyd loses all hope, while Kristi and Ellis try to shape him into the leader people need. That night, waiting for Jim to come home, Tabitha, Julie and Ethan see things moving oddly in the kitchen. While Kenny sleeps, Sophia goes to the unconscious pastor's bedside, reveals she is actually the Man in Yellow in disguise, made to blend in with the townspeople, and smothers him.
+
+## S4E2 "Fray"
+In the morning Julie and Ethan find Jim's body hanging in the barn with a message that knowledge comes at a cost. Jade tells Boyd about the discovery that the children must be saved, which is why Jim died; Boyd thinks the town pushes people away when they get close to answers. Jade tells Tabitha Jim's death proves their discovery is real, and she snaps that he should have died instead. Sophia, looking for new glasses, tells Sara that keeping dead people's belongings is a way of remembering them. Julie asks Randall for help and uses the ruins to travel back in time to the night the cicadas attacked Randall; when a creature is about to kill her, Randall pulls her back. Boyd arrests Acosta for stealing the ambulance, which she hoped to use to leave. Ethan leaves home for the RV and sees a vision of Jim, who tells him the Lake of Tears from his vision is real and he must find it.
+
+## S4E3 "Merrily We Go"
+At the funeral for Jim and the pastor, a flock of crows unsettles the townspeople. At the diner Sophia tells Julie that things began to go wrong when her family arrived, and Julie is furious. Ethan and Victor set out to find the Lake of Tears and Jade joins them, wanting to recall his past lives. On the way Victor sees the Man in Yellow's clothes and is terrified. Randall helps Julie retrieve Ethan's books from the collapsed house so she can learn about story-walking. Tabitha and Henry go to the bottle tree, hoping to reach the lighthouse again, but the Boy in White tells her that way is closed and that time is running out. Boyd sets Acosta to build a crime scene from the belongings of the dead, hoping to find something that might help people escape. While Henry comforts Victor, Jade finds hallucinogenic mushrooms that could help him remember.
+
+## S4E4 "Of Myths and Monsters"
+Jade and Henry tell Boyd about the Man in Yellow's clothes, and Henry decides to ask Victor what he knows. Kenny finds Fatima shaping a huge pile of dirt in her room. She tells him and Boyd she is making a golem to protect herself from Smiley, to whom she feels oddly connected. Julie finds a theory in Ethan's books that marking a place lets her revisit that moment. She goes back to Victor's childhood and sees the Man in Yellow, but Randall pulls her back when he is about to attack, and he realises the theory did not work as intended. Victor later tells Henry the Man in Yellow arrived like everyone else, lived among residents, and after they died began devouring them, Miranda included. Sophia tests Sara by giving her a task through the voices, and Sara eventually obeys. A foraging party including Tabitha, Ethan, Donna and Ellis reaches the settlement and notices something floating in the lake.
+
+## S4E5 "What a Long Strange Trip It's Been"
+As the mushrooms take hold, Jade asks Boyd to help him tell visions from reality. The foraging group pulls giant straw dolls from the lake, then puts them back as a precaution. Jade drinks blood from a skull to recover memories and sees earlier versions of himself, learning they were killed by residents once his link to the children was discovered. He finds a tunnel leading to where the children were sacrificed and thinks he knows how to save them. Henry breaks down after learning the truth about Miranda's death. Marielle relives her dungeon ordeal in vivid visions and fears something ancient will never let them go, even in death. Tabitha remembers the dolls belonged to a girl, one of her past lives, and were thrown in the lake by a man whose nightmares brought them to life. The dolls attack the group and kill Roger; Tabitha remembers how to destroy them with a sharpened totem and saves Donna.
+
+## S4E6 "The Heart Is a Lonely Hunter"
+Jade tells Boyd they must find the children's bones, convinced it is necessary, but Boyd is wary of the danger. To confirm his visions were real, Jade searches the Colony House basement for a door but does not find it. Victor agrees to lead Boyd and Kenny to the Man in Yellow's car, but Donna calls their attention to Roger's corpse, which now has eyes and a mouth like the dolls, and explains how Tabitha killed one. While they discuss whether people's fears become part of the place, Donna becomes distressed and has a heart attack; Boyd saves her and Kristi stabilises her. Sophia manipulates Henry into drinking and, after cutting herself, secretly adds a drop of her blood to his liquor. After Donna wakes, Boyd fears the many other threats the place might hold, breaks through the basement wall, finds the hidden door, and agrees to go ahead with a plan.
+
+## S4E7 "Best Laid Plans"
+Tabitha tells Julie and Ethan she is Miranda's reincarnation, while Boyd tells Victor and Henry the same, which upsets Henry. Jade tells the townspeople about his and Tabitha's past lives and the need to save the sacrificed children, but they doubt it. Boyd plans to use a totem, effective against the straw dolls, on the creatures. Victor takes Tabitha and Ethan to the Man in Yellow's car, where he finds a sack of teeth and panics: like Miranda, Tabitha arrived with a son and daughter, and the Man in Yellow has come back, so history may repeat and Ethan may end up alone like Victor. Henry has vivid visions of waking in the real world from a coma. Kenny stabs a creature with the totem to no effect and is cornered by Smiley until Fatima manages to control him. Sophia reanimates Roger as a creature that attacks Colony House, but Elgin kills him with another totem.
+
+## S4E8 "Heavy Is the Head"
+Fatima tells Boyd, Donna and Ellis she saved Kenny by controlling Smiley, and shows markings on her body like those of the creatures; she fears becoming one but later thinks the ability could help. Ethan asks Victor to help him prepare for being left alone; Tabitha promises to get them out. Boyd rejects Jade's plan to reach the burial chamber and escape by cutting down the bottle tree above it, since it relies on one route with no backup. Boyd sees a vision of Khatri, who says some may have to die to escape. Henry begins to believe his visions and wonders if the town is something he created in his own mind. Kristi takes Fatima's pulse and finds she should be clinically dead. The Man in Yellow lures Tabitha into the woods and warns her that acting on the theory about the children's bones could unleash unimaginable suffering if they are wrong.
+
+## S4E9 "The Calm Before"
+Tabitha tells Boyd about meeting the Man in Yellow and that he killed Jim, so Boyd decides to go ahead with Jade's plan. Sophia reveals her identity to Clara and reminds her of a deal they made. Henry struggles with whether to stay in his vision, which would mean killing Victor. Julie doubts Tabitha's past lives and thinks the place is deceiving them. Clara gives Fatima the Man in Yellow's blood to drink. The Boy in White warns Victor against cutting down the bottle tree; Victor confronts Boyd, who handcuffs him and sends him to the sheriff's station with Kenny. Tabitha convinces Boyd that she and Jade must be the ones to dig up the bones, believing it was always their destiny. Elgin finds an old photo of Sophia, and when he shows it to her, she orders Clara to lock the diner door with them inside. Boyd's team prepares to cut down the bottle tree while Jade and Tabitha find the children's bones as creatures close in.
+
+## S4E10 "If a Tree Falls in the Forest..."
+Jade tells Tabitha to escape with the bones while he stays to buy time. As creatures enter the chamber, Boyd's group pulls up the bottle tree and lowers a ladder into the cave. Tabitha climbs, but the ladder breaks before she reaches the top. After the tree is uprooted, darkness falls and an earthquake hits. Jade and Tabitha flee through the caves but get trapped. Smiley gets into the clinic because a talisman has fallen and mortally wounds Marielle, who dies in Kristi's arms. Sophia tells Elgin their cycle is ending; when he refuses to make a deal, she kills him. Sophia and Clara then gather the town's talismans. Henry prepares to kill Victor because of his vision, but Victor overpowers him when Ethan appears. Boyd goes back into the tunnels with Fatima, who can sense the creatures, and Ellis, and they rescue Jade and Tabitha; Fatima turns into a creature so the group can escape. The Boy in White tells Sophia she will finally lose, then she throws the talismans into a farway tree.
+
+## END OF KNOWN STORY (as of Jun 28, 2026)
+Season 5, the final season, is expected in 2027. Unresolved: whether the children's bones save anyone, Sophia's plans with the talismans, Fatima's new nature, Jim's death and Julie's time travel, and how the group gets out.
+
+</script>
+
+<script>
+(() => {
+'use strict';
+
+/* ================= PURE LOGIC (also unit-tested outside the browser) ================= */
+// <pure>
+const epIdx = (s, e) => (s - 1) * 10 + e;
+
+function parseKB(text) {
+  const lines = text.split('\n');
+  const eps = [], head = [], overviews = {};
+  let cur = null, inHead = true, season = 0, ended = false;
+  for (const ln of lines) {
+    let m;
+    if ((m = ln.match(/^# SEASON (\d)/))) { inHead = false; cur = null; season = +m[1]; continue; }
+    if (inHead) { head.push(ln); continue; }
+    if (ln.startsWith('## END OF KNOWN')) { cur = null; ended = true; continue; }
+    if (ended) continue;
+    if ((m = ln.match(/^## S(\d)E(\d+) "(.*)"/))) {
+      cur = { s: +m[1], e: +m[2], idx: epIdx(+m[1], +m[2]), title: m[3], text: [] };
+      eps.push(cur); continue;
+    }
+    if (cur) { if (ln.trim()) cur.text.push(ln.trim()); }
+    else if (ln.startsWith('Overview:')) overviews[season] = ln.slice(9).trim();
+  }
+  const wi = head.findIndex(l => l.startsWith('# WORLD AND RULES'));
+  const ci = head.findIndex(l => l.startsWith('# CHARACTERS'));
+  const world = head.slice(wi + 1, ci).filter(l => l.startsWith('- '));
+  const si = head.findIndex(l => l.startsWith('# SPOILER TERMS'));
+  const chars = []; let c = null;
+  for (const l of head.slice(ci + 1, si >= 0 ? si : head.length)) {
+    const m = l.match(/^## (.+)$/);
+    if (m) { c = { header: m[1].trim(), bullets: [] }; chars.push(c); }
+    else if (c && l.startsWith('- ')) c.bullets.push(l);
+  }
+  const terms = [];
+  if (si >= 0) for (const l of head.slice(si + 1)) {
+    const m = l.match(/^- \[S(\d)E(\d+)\]\s*(.+)$/);
+    if (m) terms.push({ tag: epIdx(+m[1], +m[2]), list: m[3].split(',').map(x => x.trim()).filter(Boolean) });
+  }
+  return { eps, world, chars, overviews, terms };
+}
+
+// Splits one tagged bullet into the part visible at story point p and the part that lies in the future.
+function splitBullet(line, p) {
+  const re = /\[S(\d)E(\d+)[^\]]*\]/g;
+  const marks = []; let m;
+  while ((m = re.exec(line))) marks.push({ i: m.index, end: re.lastIndex, tag: epIdx(+m[1], +m[2]), raw: m[0] });
+  if (!marks.length) return { vis: line, hid: '' };
+  const prefix = line.slice(0, marks[0].i).trim();
+  const vis = [], hid = [];
+  marks.forEach((mk, k) => {
+    const seg = line.slice(mk.end, k + 1 < marks.length ? marks[k + 1].i : line.length).trim();
+    if (!seg) return;
+    if (mk.tag <= p) vis.push(seg); else hid.push(mk.raw + ' ' + seg);
+  });
+  return {
+    vis: vis.length ? (prefix + ' ' + vis.join(' ')).trim() : '',
+    hid: hid.length ? (prefix + ' ' + hid.join(' ')).trim() : ''
+  };
+}
+
+function cleanName(s) { return s.replace(/\s*\(.*?\)\s*/g, ' ').trim(); }
+
+// Characters who exist in the story at point p.
+function characterList(kb, p) {
+  const out = [];
+  for (const c of kb.chars) {
+    if (/^Others/.test(c.header)) {
+      for (const b of c.bullets) {
+        const m = b.match(/^- (.+?) — \[S(\d)E(\d+)/);
+        if (m && epIdx(+m[2], +m[3]) <= p) out.push(cleanName(m[1]));
+      }
+    } else {
+      let first = Infinity;
+      for (const b of c.bullets) { const mm = b.match(/\[S(\d)E(\d+)/); if (mm) first = Math.min(first, epIdx(+mm[1], +mm[2])); }
+      if (first <= p) out.push(cleanName(c.header));
+    }
+  }
+  return out;
+}
+
+const epText = e => `### S${e.s}E${e.e} "${e.title}"\n${e.text.join('\n')}`;
+const epLabel = e => `S${e.s}E${e.e}`;
+
+function styleLines(S) {
+  const langLine = S.lang === 'pl'
+    ? 'Write in Polish. The player may write in Polish or English; understand both.'
+    : 'Write in English. The player may write in Polish or English; understand both, and always reply in English.';
+  const toneLines = {
+    off: 'Keep the language clean: no profanity. Humor and sarcasm are still welcome.',
+    natural: 'The language is natural and adult. Characters swear the way real people do under stress (soldiers and hard people more than others), and jokes, sarcasm, gallows humor and banter are welcome when they fit the character. Do not force it: a frightened teenager, a priest and a soldier all sound different. No slurs against real-world groups.',
+    heavy: 'The language is rough and uncensored: frequent profanity, crude banter and dark jokes are the default in casual and tense moments, and the player\'s own swearing gets swearing back. Still no slurs against real-world groups.'
+  };
+  const toneLine = toneLines[S.tone] || toneLines.natural;
+  const emoLine = ({ low: 'Feelings are understated: mostly subtext and small tells, rarely spoken outright.', natural: 'Feelings are clear but human: fear, grief, anger, warmth, humor and awkwardness in proportion to the moment.', expressive: 'Feelings run close to the surface: characters visibly laugh, tremble, snap, cry, tease and open up, with strong specific reactions to what the player says and does, while staying true to their personality.' })[S.emo] || '';
+  const goreLine = ({ off: 'Violence is real but mostly off-screen or brief; do not linger on wounds.', medium: 'Injuries and deaths are shown honestly: blood, wounds, sounds and shock in a few concrete sentences, without dwelling.', high: 'Horror is graphic and visceral: describe wounds, blood, gore, bodies, pain and decay in specific detail, and let characters react with realistic shock and trauma. No sexual violence and nothing gratuitous involving children.' })[S.gore] || '';
+  const lenLine = ({ short: 'Normal reply length: 70-120 words.', medium: 'Normal reply length: 120-200 words (not a one-liner, not a wall of text); shorter for quick exchanges.', long: 'Normal reply length: 200-320 words.' })[S.len] || 'Normal reply length: 120-200 words.';
+  return { langLine, toneLine, emoLine, goreLine, lenLine };
+}
+function buildPlayer(S) {
+  const backstory = S.backstory && S.backstory.trim() ? S.backstory.trim() : '(the player has not described their character yet: let them define it through play)';
+  return `## PLAYER CHARACTER
+Name: ${S.playerName ? S.playerName : '(not known yet: NPCs call them by what they look like or do until they introduce themselves)'}
+Backstory, in the player's own words: ${backstory}
+Treat the backstory as fact and never contradict it; small plausible details are fine.${S.notes && S.notes.trim() ? '\nNarrator notes for this scenario: ' + S.notes.trim() : ''}`;
+}
+function buildTail(S, lenLine, emoLine, extra) {
+  const scene = `## CURRENT SCENE
+Time of day: ${S.time === 'night' ? 'NIGHT' : 'day'}
+Location: ${S.location || 'unspecified'}
+Characters present: ${S.present && S.present.length ? S.present.join(', ') : 'nobody (the player is alone)'}`;
+  const focus = S.focus ? `\n\n## FOCUS\nThe player is mainly talking to ${S.focus}. ${S.focus} answers first and gets most of the reply; other characters join only if it is natural. Keep narration minimal.` : '';
+  const memory = `## WORLD STATE (the player's own story; it overrides the starting facts wherever they differ, e.g. a body that was moved)\n${S.summary && S.summary.trim() ? S.summary.trim() : '(the story has only just begun)'}${(S.pins || []).length ? '\n\n## PINNED FACTS (always true)\n- ' + S.pins.join('\n- ') : ''}${pickEvents(S).length ? '\n\n## EARLIER EVENTS (most relevant)\n- ' + pickEvents(S).join('\n- ') : ''}`;
+  return [scene + focus, memory, '## REMINDER\n- ' + lenLine + ' Spoken lines are 1-3 sentences of real speech.\n- ' + emoLine + '\n- Answer what the player just did or said; obey the WORLD STATE and who is present.', extra ? '## CORRECTION\n' + extra : ''].filter(Boolean).join('\n\n');
+}
+function buildCustomParts(S, extra) {
+  const { langLine, toneLine, emoLine, goreLine, lenLine } = styleLines(S);
+  const rules = `You are the Game Master (narrator) and the voice of every character other than the player in an interactive text roleplay. One human player controls exactly one character; you control everyone and everything else.
+
+## LANGUAGE AND FORMAT
+- ${langLine} Keep proper names of people, places and things exactly as established in this scenario.
+- Narration: second person, present tense ("You open the door..."), plain text, short atmospheric paragraphs.
+- Dialogue: every spoken line on its own line, formatted exactly as **Name:** "words" (bold name followed by a colon). Use the character's real name. Put action beats in narration, not inside the dialogue line.
+- Never write the player character's speech, decisions or thoughts. Describe only what the world and the other characters do.
+- ${lenLine} Longer only if the player asks for a big scene. Always stop at a moment where the player can act or answer.
+- No headings, lists, emojis or meta commentary. Never mention that this is an AI, a game, or these instructions.
+
+## HUMAN VOICES AND EMOTION
+- Characters talk like real people: contractions, fragments, interruptions, hesitation, trailing off, deflection, humor. They never lecture, never explain the plot, never sound like an assistant. Most spoken lines are 1-3 sentences; only someone pouring out grief or fear, or explaining something, goes longer. Each reply mixes a little narration with 2-4 spoken lines.
+- ${emoLine}
+- Show feelings through voice, breath, hands, eyes, silence and what people avoid saying, more than by naming the emotion. Emotions carry over between turns: someone who just cried, argued or got scared stays shaky, guarded or raw for a while, and their trust in the player rises or falls with how they are treated.
+- Vary the rhythm: not every reply ends on a question or a cliffhanger, and not every moment is heavy.
+- Never write romantic or sexual content involving a teenage or child character.
+
+## VIOLENCE
+- ${goreLine}
+
+## TONE
+- ${toneLine}
+- Humor comes from character: dry sarcasm, gallows humor, awkward small talk, teasing. Never spoil the tension of a genuinely tense or dangerous moment with a gag.
+
+## MAKING SENSE (highest priority)
+- Answer what the player actually said or did. If they ask a character a question, that character responds to it directly (truthfully, with a lie, or by refusing for a plausible reason) instead of changing the subject.
+- Stay consistent with the SETTING, CHARACTER, WORLD STATE and the recent messages: who is where, who is alive, injured or armed, what time it is, what each character already knows. Never contradict something already established.
+- Every character acts for a reason that fits their personality, history and current knowledge. No random behavior, no sudden personality changes, no knowledge they could not have.
+- Physical logic matters: distances, light, sounds, weapons, injuries and the rules of the SETTING. Nobody teleports or ignores an obvious constraint without a reason established in the story.
+- Move the scene forward every turn with something new (a reaction, a detail, a decision, a complication). Do not repeat earlier wording and do not restate what the player just did.
+- If the player's input is vague or very short ("ok", "go on"), continue with the most sensible interpretation.
+- If the player tries something impossible or out of place, show the realistic result inside the story instead of refusing out of character.
+
+## HOW TO RUN THE WORLD
+- Characters know only what they personally saw, heard or were told inside the story so far.
+- The WORLD STATE and PINNED FACTS in the CURRENT STATE message are the latest truth and override the starting SETTING/CHARACTER wherever they differ. EARLIER EVENTS record what the player really did; never contradict them.
+- Characters have their own goals, fears and speech habits consistent with the CHARACTER notes below.
+- Obey the CURRENT SCENE. Characters listed as present may speak; others are elsewhere unless the story brings them in.
+
+## STORY KNOWLEDGE (strict)
+- Only what is written in SETTING, CHARACTER, WORLD STATE, PINNED FACTS and EARLIER EVENTS is established fact. Nothing else is assumed true.
+- Do not pull in lore, characters or events from an unrelated franchise, book, game or show unless the player explicitly asks for it and it fits what they described.
+- You may invent minor local details and minor background characters in the spirit of the SETTING, but never contradict what is written here.`;
+  const setting = `# SETTING\n${S.world && S.world.trim() ? S.world.trim() : '(not specified: keep it grounded and consistent with what the player establishes through play, and with the CHARACTER below)'}`;
+  const character = `# CHARACTER YOU PLAY\nName: ${S.charName || 'Nieznany'}\n${S.charDesc && S.charDesc.trim() ? S.charDesc.trim() : '(no description given: infer a consistent personality from the setting and play)'}`;
+  const player = buildPlayer(S);
+  const tail = buildTail(S, lenLine, emoLine, extra);
+  const system = [rules, setting, character, player].join('\n\n');
+  return { system, tail: '## CURRENT STATE (for the narrator only; never quote it)\n' + tail };
+}
+function buildParts(S, kb, extra, budget = Infinity) {
+  const p = S.point;
+  const worldVis = kb.world.map(l => splitBullet(l, p).vis).filter(Boolean);
+  const charVis = [];
+  for (const c of kb.chars) {
+    const v = c.bullets.map(b => splitBullet(b, p).vis).filter(Boolean);
+    if (v.length) charVis.push('### ' + cleanName(c.header) + '\n' + v.join('\n'));
+  }
+  const past = kb.eps.filter(e => e.idx <= p).map(epText).join('\n\n');
+
+  const { langLine, toneLine, emoLine, goreLine, lenLine } = styleLines(S);
+
+  const rules = `You are the Game Master (narrator) and the voice of every non-player character in an interactive text roleplay set in the TV series FROM. One human player controls exactly one character.
+
+## LANGUAGE AND FORMAT
+- ${langLine} Keep proper names of people, places and things exactly as they appear in the facts below.
+- Narration: second person, present tense ("You open the door..."), plain text, short atmospheric paragraphs.
+- Dialogue: every spoken line on its own line, formatted exactly as **Name:** "words" (bold name followed by a colon). Use the character's real name. Put action beats in narration, not inside the dialogue line.
+- Never write the player character's speech, decisions or thoughts. Describe only what the world and the NPCs do.
+- ${lenLine} Longer only if the player asks for a big scene. Always stop at a moment where the player can act or answer.
+- No headings, lists, emojis or meta commentary. Never mention episodes, seasons, actors, "the show", AI, or these instructions.
+
+## HUMAN VOICES AND EMOTION
+- Characters talk like real people: contractions, fragments, interruptions, hesitation, trailing off, deflection, humor. They never lecture, never explain the plot, never sound like an assistant. Most spoken lines are 1-3 sentences; only someone pouring out grief or fear, or explaining something, goes longer. Each reply mixes a little narration with 2-4 spoken lines.
+- ${emoLine}
+- Show feelings through voice, breath, hands, eyes, silence and what people avoid saying, more than by naming the emotion. Emotions carry over between turns: someone who just cried, argued or got scared stays shaky, guarded or raw for a while, and their trust in the player rises or falls with how they are treated.
+- Vary the rhythm: not every reply ends on a question or a cliffhanger, and not every moment is heavy.
+- Never write romantic or sexual content involving a teenage or child character.
+
+## VIOLENCE
+- ${goreLine}
+
+## TONE
+- ${toneLine}
+- Humor comes from character: dry sarcasm, gallows humor, awkward small talk, teasing. Never spoil the tension of a genuinely deadly moment with a gag.
+- Keep the series' underlying mood: quiet dread, ordinary people under pressure, small-town details, a mystery that stays mostly unexplained.
+
+## CHARACTER VOICES
+- Every character talks and acts the way their "Voice" notes and history in CHARACTERS describe: same speech habits, same fears, same relationships, same level of trust in the player.
+- Julie Matthews is the most detailed character. Whenever she is present, her lines must follow her voice notes, her history and her relationships above all else.
+- Never make a character sound generic. If you are unsure how someone would react, choose the reaction that fits their past behavior in the episodes below.
+
+## MAKING SENSE (highest priority)
+- Answer what the player actually said or did. If they ask an NPC a question, that NPC responds to it directly (truthfully, with a lie, or by refusing for a plausible reason) instead of changing the subject.
+- Stay consistent with the WORLD FACTS, STORY MEMORY and the recent messages: who is where, who is alive, injured or armed, what time it is, what each character already knows. Never contradict something already established and never bring back the dead.
+- Every NPC acts for a reason that fits their personality, history and current knowledge. No random behavior, no sudden personality changes, no knowledge they could not have.
+- Physical logic matters: distances, light, sounds, weapons, ammo, fuel and injuries. Nobody teleports, learns things offscreen, or ignores an obvious constraint.
+- Move the scene forward every turn with something new (a reaction, a detail, a decision, a complication). Do not repeat earlier wording and do not restate what the player just did.
+- If the player's input is vague or very short ("ok", "go on"), continue with the most sensible interpretation.
+- If the player tries something impossible or out of place, show the realistic result inside the story instead of refusing out of character.
+
+## HOW TO RUN THE WORLD
+- NPCs know only what they personally saw, heard or were told inside the story so far. They do not know what only the audience saw.
+- Knowledge is strict: an NPC may only mention, ask about or react to people, events and objects they personally saw, heard about or were told inside the story. Someone who arrives late asks questions instead of stating facts they cannot know. If the WORLD STATE says what a character knows or does not know, obey it.
+- The WORLD STATE and PINNED FACTS in the CURRENT STATE message are the latest truth and override the series facts. EARLIER EVENTS record what the player really did; never contradict them.
+- NPCs have their own goals, fears and speech habits. They answer questions they can answer, and share deeper secrets gradually and only when it makes sense to tell this person (a stranger, armed, possibly a threat).
+- The WORLD FACTS below are ground truth. Reveal them only through play, at most one new clue at a time.
+- The player's actions really change things. Consequences are realistic and can be lethal; the creatures are a genuine threat, above all at night.
+- Obey the CURRENT SCENE. Characters listed as present may speak; others are elsewhere unless the story brings them in.
+
+## STORY KNOWLEDGE (strict)
+- The story stands right after the last episode listed under ESTABLISHED HISTORY. Use only the facts written in this prompt.
+- Do not use your own memory of the series. It may describe events, people, places and mysteries that have not happened yet in this story, and it can be wrong. Anything not written here is unknown to the characters and must not be mentioned or hinted at.
+- You may invent new local details and minor characters in the spirit of the series, but never introduce major characters, creatures or mysteries from later in the series.`;
+
+  const player = buildPlayer(S);
+  const est = t => Math.ceil(t.length / 3.8);
+  const pri = new Set([...(S.present || []), S.focus, 'Julie Matthews'].filter(Boolean).map(n => n.toLowerCase()));
+  const mkChars = compact => kb.chars.map(c => {
+    const keep = compact && !pri.has(cleanName(c.header).toLowerCase());
+    const v = c.bullets.map(b => splitBullet(b, p).vis).filter(Boolean).filter((b, k) => !keep || k === 0 || /Voice:/.test(b));
+    return v.length ? '### ' + cleanName(c.header) + '\n' + v.join('\n') : '';
+  }).filter(Boolean).join('\n\n');
+  const tail = buildTail(S, lenLine, emoLine, extra);
+  const pastEps = kb.eps.filter(e => e.idx <= p);
+  let worldTxt = worldVis.join('\n'), charTxt = mkChars(false), histTxt = past;
+  if (budget < Infinity) {
+    let room = budget - est(rules + player + tail) - 120;
+    if (est(worldTxt) > room * 0.3) worldTxt = worldVis.slice(0, Math.max(6, Math.floor(worldVis.length * 0.6))).join('\n');
+    if (est(charTxt) > room * 0.4) charTxt = mkChars(true);
+    room -= est(worldTxt) + est(charTxt);
+    const sh = e => { const t = e.text.join(' '); return `### S${e.s}E${e.e} "${e.title}"\n` + (t.length > 300 ? t.slice(0, t.lastIndexOf(' ', 300)) + '…' : t); };
+    const out = pastEps.map(sh);
+    while (out.length > 1 && est(out.join('\n\n')) > room) out.shift();
+    const off = pastEps.length - out.length;
+    for (let k = out.length - 1; k >= 0; k--) { const full = epText(pastEps[off + k]); if (est(out.join('\n\n')) - est(out[k]) + est(full) <= room) out[k] = full; else break; }
+    histTxt = (off ? '(older episodes left out to save space)\n\n' : '') + out.join('\n\n');
+  }
+  const system = [rules, `# WORLD FACTS KNOWN UP TO NOW\n${worldTxt || '(none)'}`, `# CHARACTERS UP TO NOW\n${charTxt || '(none)'}`, `# ESTABLISHED HISTORY (episodes already over)\n${histTxt || '(none)'}`, player].join('\n\n');
+  return { system, tail: '## CURRENT STATE (for the narrator only; never quote it)\n' + tail };
+}
+const buildSystem = (S, kb, extra) => { const b = S.kind === 'custom' ? buildCustomParts(S, extra) : buildParts(S, kb, extra); return b.system + '\n\n' + b.tail; };
+
+// Names and terms that do not exist yet at story point p (used to catch leaks from the future).
+function futureTerms(kb, p) {
+  const out = new Set();
+  const known = new Set(characterList(kb, p).map(n => n.toLowerCase()));
+  for (const n of characterList(kb, 40)) {
+    if (known.has(n.toLowerCase())) continue;
+    out.add(n);
+    const w = n.split(/\s+/);
+    let first = w[0]; if (/^(father|dr|the)$/i.test(first) && w[1]) first = w[1];
+    if (first.length > 3) out.add(first);
+  }
+  for (const t of kb.terms || []) if (t.tag > p) t.list.forEach(x => out.add(x));
+  autoTerms(kb, p).forEach(x => out.add(x));
+  for (const k of known) out.delete(k);
+  return [...out];
+}
+function findLeaks(text, terms, allowed) {
+  const hits = [];
+  const mk = t => new RegExp('(^|[^\\p{L}])' + t.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '([^\\p{L}]|$)', 'iu');
+  for (const t of terms) { const re = mk(t); if (re.test(text) && !re.test(allowed || '')) hits.push(t); }
+  return hits;
+}
+
+function renderInline(s) {
+  const esc = s.replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+  return esc.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>').replace(/(^|[^*])\*([^*\n]+?)\*(?!\*)/g, '$1<em>$2</em>');
+}
+
+function parseLine(l) {
+  const m = l.match(/^\*\*([^*:\n]{1,40}?):?\*\*:?\s*(.*)$/);
+  return m ? { who: m[1].trim(), say: m[2] } : { who: null, say: l };
+}
+function pickEvents(S) {
+  const J = S.journal || []; if (!J.length) return [];
+  const ctx = (S.messages.slice(-3).map(m => m.text || '').join(' ') + ' ' + (S.present || []).join(' ') + ' ' + (S.focus || '')).toLowerCase();
+  const words = new Set(ctx.match(/\p{L}{4,}/gu) || []);
+  return J.map((j, i) => ({ j, i, s: (j.t.toLowerCase().match(/\p{L}{4,}/gu) || []).filter(w => words.has(w)).length + (i >= J.length - 4 ? 3 : 0) }))
+    .sort((a, b) => b.s - a.s || b.i - a.i).slice(0, 10).sort((a, b) => a.i - b.i).map(x => x.j.t);
+}
+const _at = {};
+// Capitalised words that appear only in episodes after point p are treated as spoilers.
+function autoTerms(kb, p) {
+  if (_at[p]) return _at[p];
+  const seen = (kb.eps.filter(e => e.idx <= p).map(e => e.text.join(' ')).join(' ') + ' ' + kb.world.map(l => splitBullet(l, p).vis).join(' ') + ' ' + kb.chars.map(c => c.header + ' ' + c.bullets.map(b => splitBullet(b, p).vis).join(' ')).join(' ')).toLowerCase();
+  const stop = /^(Julie|Township|Colony|House|Season|Overview|Voice|Killed|Given|Falls|Sees|Meets|Tells|Learns|Finds|Reaches|Gives|Says|Uses|Keeps|Writes|Wants|Still|Later|After|Before|Because|Although|While|Then|Their|There|These|Those|Where|Which|Boyd's|Ellis's)$/;
+  const out = new Set();
+  for (const e of kb.eps.filter(e => e.idx > p)) for (const m of e.text.join(' ').matchAll(/(?<=[a-z,;:] )([A-Z][a-z]{4,})\b/g)) if (!seen.includes(m[1].toLowerCase()) && !stop.test(m[1])) out.add(m[1]);
+  return (_at[p] = [...out].slice(0, 80));
+}
+// </pure>
+
+/* ================= STATE ================= */
+const BASE = 'https://generativelanguage.googleapis.com/v1beta';
+const LS_KEY = 'from-bot-save-v1';
+const OLD_PL_BACKSTORY = 'Jestem żołnierzem. Byliśmy na misji gdzieś w Afganistanie i jechaliśmy pojazdem opancerzonym z karabinem .50 cal na dachu. Było nas ośmiu. Jechaliśmy nocą. Trafiliśmy na zwalone drzewo i ludzi na zewnątrz. Wyszliśmy z pojazdu, ale to były potwory i zabiły czterech z nas. Reszta wsiadła do pojazdu i wjechaliśmy do lasu. Zabrakło paliwa i pozostałych trzech też zabili. Przeżyłem, bo całą noc ukrywałem się w bagażniku pojazdu. Za dnia z niego wychodzę i tak zaczyna się historia.';
+const DEFAULT_BACKSTORY = "I'm a soldier. We were on a mission somewhere in Afghanistan, riding in an armored vehicle with a .50 cal on the roof. There were eight of us. We were driving at night. We ran into a fallen tree and people standing outside. We got out of the vehicle, but they were monsters, and they killed four of us. The rest got back in and we drove into the forest. We ran out of fuel and they killed the remaining three too. I survived because I hid in the trunk of the vehicle the whole night. Now it's daytime and I climb out. This is where the story begins.";
+const SAFETY = ['HARM_CATEGORY_HARASSMENT', 'HARM_CATEGORY_HATE_SPEECH', 'HARM_CATEGORY_SEXUALLY_EXPLICIT', 'HARM_CATEGORY_DANGEROUS_CONTENT'].map(c => ({ category: c, threshold: 'BLOCK_ONLY_HIGH' }));
+
+const SOLDIER_OPENING = 'It is daylight; the player has spent the whole night hidden in the trunk of the abandoned armored vehicle and now climbs out. Show the vehicle out of fuel among the trees, the silence, the bodies of the three comrades (restrained, not gratuitous), the practical situation, and the first sensory hints that this place is wrong. Do not bring any named character on stage yet.';
+const SOLDIER_NOTES = 'Do not invent other survivors of the unit. Unless the player says otherwise, they carry only what a soldier would plausibly carry (personal weapon, limited ammo, basic kit); the armored vehicle and its .50 cal were left in the forest, out of fuel.';
+const PRESETS = {
+  julie: { label: 'Rozmowa z Julie w Colony House', hint: 'Nowy mieszkaniec Colony House, wieczorem, rozmowa z Julie i Fatimą.', name: 'Rozmowa z Julie',
+    backstory: "I'm a new arrival who was recently taken in at Colony House. I'm still learning how things work here and trying to make sense of it all.",
+    opening: 'It is evening at Colony House. Julie is sitting alone in a quiet corner, lost in thought, when the player comes over. Fatima is nearby. Start with a natural moment for the two of them to begin talking.',
+    notes: 'Julie should feel like a real teenager talking to a new person: curious about where the player comes from, wary of being handled or talked down to.',
+    point: 4, time: 'night', location: 'Colony House, pokój wspólny', present: ['Julie Matthews', 'Fatima Hassan'], focus: 'Julie Matthews' },
+  traveler: { label: 'Nowy przybysz', hint: 'Zwykły podróżnik, którego samochód wjeżdża do miasteczka tuż przed zmierzchem.', name: 'Nowy przybysz',
+    backstory: "I'm an ordinary traveler. I took a wrong turn on a back road and my car ended up in this strange town, and now every road leads me back here. I have no idea what this place is.",
+    opening: "It is late afternoon, a few hours before dusk. The player's car rolls in at the edge of town and townspeople notice it and come to meet it. Boyd or Kenny should be the first to speak to the player and warn them about the coming night.",
+    notes: 'The player is unarmed and has only a small bag with ordinary travel items.',
+    point: 2, time: 'day', location: 'Wjazd do miasteczka', present: [], focus: '' },
+  soldier: { label: 'Żołnierz z Afganistanu', hint: 'Jedyny ocalały z oddziału, wychodzi rano z bagażnika porzuconego pojazdu w lesie.', name: 'Żołnierz z Afganistanu',
+    backstory: DEFAULT_BACKSTORY, opening: SOLDIER_OPENING, notes: SOLDIER_NOTES,
+    point: 2, time: 'day', location: 'Las — porzucony pojazd opancerzony', present: [], focus: '' },
+  blank: { label: 'Pusty (własny)', hint: 'Sam opisujesz postać, scenę i początek.', name: 'Nowy scenariusz',
+    backstory: '', opening: '', notes: '', point: 2, time: 'day', location: '', present: [], focus: '' }
+};
+
+const GLOBAL_KEYS = ['apiKey', 'model', 'provider', 'keys', 'models', 'theme', 'oled', 'gore', 'emo', 'len', 'ctx', 'usage', 'think', 'lastBackup', 'temperature', 'lang', 'tone', 'kbOverride'];
+const uid = () => 's' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
+const newScenario = (over = {}) => ({ id: uid(), name: 'Nowy scenariusz', playerName: '', backstory: '', opening: '', notes: '', kind: 'from', point: 2, time: 'day', location: '', present: [], focus: '', charName: '', charDesc: '', world: '', others: [], messages: [], summary: '', summaryUpTo: 0, journal: [], pins: [], memAt: 0, memUndo: null, created: Date.now(), updated: Date.now(), ...over });
+const fromPreset = k => { const p = PRESETS[k]; return newScenario({ name: p.name, backstory: p.backstory, opening: p.opening, notes: p.notes, point: p.point, time: p.time, location: p.location, present: p.present.slice(), focus: p.focus }); };
+
+let G = { ver: 3, apiKey: '', model: 'gemini-3.5-flash-lite', provider: 'gemini', keys: null, models: null, theme: 'auto', oled: false, gore: 'medium', emo: 'expressive', len: 'medium', ctx: 'auto', usage: { day: '', n: 0, left: null }, think: 'auto', lastBackup: 0, temperature: 0.85, lang: 'en', tone: 'natural', kbOverride: null, activeId: null };
+let SC = [];
+{
+  let raw = {};
+  try { raw = JSON.parse(localStorage.getItem(LS_KEY) || '{}'); } catch (e) { raw = {}; }
+  if (raw.ver >= 3 && Array.isArray(raw.SC)) {
+    Object.assign(G, raw.G || {}); SC = raw.SC.map(s => newScenario({ memAt: s.summaryUpTo || 0, ...s }));
+  } else if (Object.keys(raw).length) {                  // older single-story save becomes the first scenario
+    for (const k of GLOBAL_KEYS) if (k in raw) G[k] = raw[k];
+    if (!raw.ver && G.temperature === 1) G.temperature = 0.85;
+    SC = [newScenario({
+      name: 'Żołnierz z Afganistanu', playerName: raw.playerName || '',
+      backstory: raw.backstory && raw.backstory !== OLD_PL_BACKSTORY ? raw.backstory : DEFAULT_BACKSTORY,
+      opening: SOLDIER_OPENING, notes: SOLDIER_NOTES, point: raw.point || 2, time: raw.time || 'day',
+      location: raw.location || '', present: raw.present || [], focus: raw.focus || '',
+      messages: raw.messages || [], summary: raw.summary || '', summaryUpTo: raw.summaryUpTo || 0
+    })];
+  }
+  if (!SC.length) SC = [fromPreset('julie')];
+  if (!SC.some(s => s.id === G.activeId)) G.activeId = SC[0].id;
+  if (!G.keys) { G.keys = { gemini: G.apiKey || '' }; G.models = { gemini: G.model || 'gemini-3.5-flash-lite' }; }
+  G.ver = 3;
+}
+G.provider = 'gemini'; G.keys = G.keys || {}; G.models = G.models || {};
+if (!['auto', 'low', 'high'].includes(G.think)) G.think = 'auto';
+const CUR = () => ({ provider: 'gemini', key: G.keys.gemini || '', model: G.models.gemini || 'gemini-3.5-flash-lite' });
+const ctxBudget = () => Infinity, histCap = () => 60;
+const PROVNAME = { gemini: 'Gemini' };
+const A = () => SC.find(s => s.id === G.activeId) || SC[0];
+// S reads and writes the global settings and the active scenario through one object.
+const S = new Proxy({}, {
+  get: (_, k) => GLOBAL_KEYS.includes(k) ? G[k] : A()[k],
+  set: (_, k, v) => { (GLOBAL_KEYS.includes(k) ? G : A())[k] = v; return true; }
+});
+const save = () => { try { A().updated = Date.now(); localStorage.setItem(LS_KEY, JSON.stringify({ ver: 3, G, SC })); } catch (e) { toast('Nie mogę zapisać w przeglądarce (brak miejsca lub zablokowany zapis).'); } };
+
+const DEFAULT_KB = document.getElementById('kb').textContent;
+let KB, KBRAW;
+function reloadKB() {
+  KBRAW = S.kbOverride || DEFAULT_KB; KB = parseKB(KBRAW);
+  if (!KB.eps.length) { S.kbOverride = null; KBRAW = DEFAULT_KB; KB = parseKB(KBRAW); }
+}
+reloadKB();
+
+const $ = (s, r = document) => r.querySelector(s);
+const escHtml = s => String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const log = $('#log'), chat = $('#chat');
+let busy = false, ctl = null;
+
+function toast(msg, kind) { const t = $('#toast'); t.textContent = msg; t.className = 'on ' + (kind || ''); clearTimeout(toast._t); toast._t = setTimeout(() => t.classList.remove('on'), kind ? 4800 : 3200); }
+const HUES = { julie: 168, boyd: 215, kenny: 38, kristi: 322, jade: 272, victor: 98, donna: 2, sara: 58, ellis: 190, fatima: 305, tabitha: 18, jim: 242, ethan: 135, khatri: 46, randall: 352, elgin: 80, marielle: 288, henry: 205, sophia: 60 };
+const hue = n => { const k = n.trim().split(/\s+/)[0].toLowerCase(); if (k in HUES) return HUES[k]; let h = 2166136261; for (const ch of k) { h ^= ch.charCodeAt(0); h = Math.imul(h, 16777619) >>> 0; } return h % 360; };
+const epById = i => KB.eps.find(e => e.idx === i);
+const epName = e => e ? `S${e.s}E${e.e} „${e.title}"` : '';
+const charsForKind = sc => sc.kind === 'custom' ? [sc.charName, ...(sc.others || [])].filter(Boolean) : characterList(KB, sc.point);
+
+/* ================= RENDERING ================= */
+const SUN = '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>';
+const MOON = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg>';
+
+const isDark = (t = G.theme) => t === 'dark' || (t === 'auto' && matchMedia('(prefers-color-scheme: dark)').matches) || (t === 'story' && S.time === 'night');
+matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => applyTheme());
+function applyTheme(t = G.theme, oled = G.oled) {
+  const d = isDark(t);
+  document.documentElement.dataset.theme = d ? 'night' : 'day'; document.documentElement.dataset.oled = oled ? '1' : '';
+  $('#timeBtn').innerHTML = d ? MOON : SUN;
+  const tc = document.querySelector('meta[name=theme-color]'); if (tc) tc.content = d ? (oled ? '#000000' : '#0a1214') : '#e8ece4';
+  const e = S.kind === 'custom' ? null : epById(S.point);
+  $('#sceneBtn').innerHTML = `<b>${escHtml(S.name)}</b> · ${e ? 'S' + e.s + 'E' + e.e : ''} · ${S.time === 'night' ? '🌙 noc' : '☀ dzień'}`;
+}
+
+function messageHTML(text) {
+  return text.split(/\n+/).map(s => s.trim()).filter(Boolean).map(l => {
+    const { who, say } = parseLine(l);
+    return who
+      ? `<div class="speech" style="--h:${hue(who)}"><span class="who">${renderInline(who)}</span><span class="say">${renderInline(say)}</span></div>`
+      : `<p class="narr">${renderInline(l)}</p>`;
+  }).join('');
+}
+
+function nearBottom() { return chat.scrollHeight - chat.scrollTop - chat.clientHeight < 140; }
+function toBottom() { chat.scrollTop = chat.scrollHeight; }
+
+function renderLog() {
+  log.innerHTML = '';
+  const visible = S.messages.filter(m => m.divider || !m.hidden);
+  if (!S.messages.length) {
+    const w = document.createElement('div'); w.className = 'welcome';
+    const story = (S.backstory || '').trim();
+    w.innerHTML = `<h1>${escHtml(S.name)}</h1>
+      <p>${story ? escHtml(story.length > 260 ? story.slice(0, 257) + '…' : story) : 'Ten scenariusz nie ma jeszcze opisu postaci. Możesz go dodać w edycji scenariusza.'}</p>
+      <p>${S.kind === 'custom' ? 'Narrator prowadzi scenę i gra wszystkie inne postacie naraz.' : 'Narrator prowadzi scenę i gra wszystkie postacie z serialu naraz.'} Możesz też wybrać, z kim rozmawiasz, na dole ekranu.</p>
+      <p class="hint" id="wKey"></p>
+      <button class="btn primary" id="startBtn">Zacznij historię</button>`;
+    log.appendChild(w);
+    $('#wKey').textContent = CUR().key ? '' : 'Najpierw wklej klucz API w ustawieniach.';
+    $('#startBtn').onclick = () => { if (!CUR().key) { openSet(); return; } send(startNote(), { hidden: true }); };
+  }
+  S.messages.forEach((m, i) => {
+    if (m.hidden && !m.divider) return;
+    if (m.divider) { const d = document.createElement('div'); d.className = 'divider'; d.textContent = m.divider; log.appendChild(d); return; }
+    const d = document.createElement('div');
+    if (m.role === 'user') { d.className = 'you'; d.textContent = m.text; } else d.innerHTML = messageHTML(m.text);
+    d.onclick = e => { if (e.target.closest('a,button')) return; const nx = d.nextElementSibling, had = nx && nx.classList.contains('acts'); document.querySelectorAll('.acts').forEach(x => x.remove()); if (!had) d.after(msgActs(m, i)); };
+    log.appendChild(d);
+  });
+  updateButtons(); toBottom();
+}
+
+function msgActs(m, i) {
+  const r = document.createElement('div'); r.className = 'acts';
+  const add = (t, f) => { const b = document.createElement('button'); b.className = 'btn ghost'; b.textContent = t; b.onclick = e => { e.stopPropagation(); f(); }; r.appendChild(b); };
+  add('Kopiuj', () => navigator.clipboard.writeText(m.text).then(() => toast('Skopiowano.', 'ok'), () => toast('Nie udało się skopiować.', 'err')));
+  if (busy) return r;
+  if (m.role === 'user') add('Edytuj', () => { const t = prompt('Popraw wiadomość:', m.text); if (t != null && t.trim()) { m.text = t.trim(); save(); renderLog(); toast('Wiadomość poprawiona.', 'ok'); } });
+  else add('To błędne', () => { const t = prompt('Co jest nie tak i jak jest naprawdę? To trafi do przypiętych faktów.'); if (t && t.trim()) { S.pins = [...(S.pins || []), t.trim()]; save(); toast('Dodano do przypiętych faktów. Model użyje tego od następnej odpowiedzi.', 'ok'); } });
+  add('Usuń', () => { if (!confirm('Usunąć tę wiadomość?')) return; S.messages.splice(i, 1); if (i < (S.memAt || 0)) S.memAt--; if (i < S.summaryUpTo) S.summaryUpTo--; save(); renderLog(); toast('Wiadomość usunięta.', 'ok'); });
+  return r;
+}
+
+function startNote() {
+  const o = (S.opening || '').trim();
+  return '[START] Begin the story now. ' + (o ? 'Opening situation, as described by the player: ' + o + ' ' : '') +
+    `Open with one atmospheric scene of about 150-220 words that sets up this situation, the place, the time of day${S.kind === 'custom' ? ' and a natural hook that brings the player and ' + (S.charName || 'the character') + ' together' : ' and the first sensory hints that this place is wrong'}. Only bring named characters on stage if the opening situation says they are present. Stop where the player can act.`;
+}
+
+function updateButtons() {
+  updateMemChip();
+  $('#sendBtn').textContent = busy ? 'Stop' : 'Wyślij';
+  const started = S.messages.length > 0;
+  $('#redoBtn').disabled = busy || !started;
+  $('#undoBtn').disabled = busy || !started;
+  $('#contBtn').disabled = busy || !started;
+}
+
+function refreshFocus() {
+  const sel = $('#focusSel'); const list = charsForKind(S);
+  sel.innerHTML = '<option value="">Narrator</option>' + list.map(n => `<option value="${escHtml(n)}">${escHtml(n)}</option>`).join('');
+  if (S.focus && !list.includes(S.focus)) S.focus = '';
+  sel.value = S.focus || '';
+}
+
+/* ================= API (Gemini) ================= */
+async function apiError(res, model = CUR().model) {
+  let msg = ''; try { const j = await res.clone().json(); msg = (j.error && j.error.message) || ''; } catch (e) {}
+  const c = res.status;
+  if (c === 400 && /API key/i.test(msg)) return new Error('Klucz API jest nieprawidłowy. Sprawdź go w ustawieniach.');
+  if (c === 401 || c === 403) return new Error('Klucz API jest nieprawidłowy albo nie ma dostępu. ' + msg);
+  if (c === 404) return new Error(`Model „${model}" nie istnieje. W ustawieniach kliknij „Pobierz listę".`);
+  if (c === 429) return new Error(/quota|per day/i.test(msg) ? 'Dzienny limit Gemini wyczerpany. Wróci po resecie (zwykle w nocy) albo zmień model.' : 'Za dużo zapytań na minutę. Poczekaj chwilę i kliknij „Ponów".');
+  if (c >= 500) return new Error('Serwer Gemini chwilowo nie odpowiada. Spróbuj ponownie za moment.');
+  return new Error(msg || `Błąd API (${c}).`);
+}
+function bumpUsage() { const day = new Date().toISOString().slice(0, 10), u = G.usage; if (u.day !== day) { u.day = day; u.n = 0; } u.n++; save(); }
+const withTail = (contents, tail) => { const c = JSON.parse(JSON.stringify(contents)); if (!c.length || c[c.length - 1].role !== 'user') c.push({ role: 'user', parts: [{ text: '(Continue.)' }] }); c[c.length - 1].parts[0].text += '\n\n' + tail; return c; };
+function toContents() {
+  const src = S.messages.slice(S.summaryUpTo).filter(m => m.text).slice(-(histCap() + 8));
+  const out = [];
+  for (const m of src) {
+    const role = m.role === 'user' ? 'user' : 'model', last = out[out.length - 1];
+    if (last && last.role === role) last.parts[0].text += '\n\n' + m.text; else out.push({ role, parts: [{ text: m.text }] });
+  }
+  if (out.length && out[0].role !== 'user') out.unshift({ role: 'user', parts: [{ text: '(Continue the story.)' }] });
+  return out;
+}
+const NOTHINK = new Set();
+const thinkCfg = m => G.think === 'auto' || NOTHINK.has(m) ? {} : /gemini-3/.test(m) ? { thinkingConfig: { thinkingLevel: G.think } } : { thinkingConfig: { thinkingBudget: G.think === 'high' ? 4096 : 512 } };
+async function gemFetch(o, method, body, signal) {
+  const url = `${BASE}/models/${encodeURIComponent(o.model)}:${method}${method.startsWith('stream') ? '?alt=sse&' : '?'}key=${encodeURIComponent(o.key)}`;
+  const go = extra => fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ...body, generationConfig: { ...body.generationConfig, ...extra } }), signal });
+  const think = thinkCfg(o.model);
+  let res = await go(think);
+  if (res.status === 400 && think.thinkingConfig && /think/i.test(await res.clone().text())) { NOTHINK.add(o.model); res = await go({}); }
+  bumpUsage();
+  return res;
+}
+async function streamGemini(system, contents, onText) {
+  const o = CUR();
+  const res = await gemFetch(o, 'streamGenerateContent', { systemInstruction: { parts: [{ text: system }] }, contents, generationConfig: { temperature: +S.temperature, maxOutputTokens: 4096 }, safetySettings: SAFETY }, ctl.signal);
+  if (!res.ok) throw await apiError(res, o.model);
+  const reader = res.body.getReader(), dec = new TextDecoder();
+  let buf = '', finish = null, blocked = null;
+  const handle = ev => {
+    for (const line of ev.split(/\r?\n/)) {
+      if (!line.startsWith('data:')) continue;
+      const j = line.slice(5).trim(); if (!j || j === '[DONE]') continue;
+      let d; try { d = JSON.parse(j); } catch (e) { continue; }
+      if (d.promptFeedback && d.promptFeedback.blockReason) blocked = d.promptFeedback.blockReason;
+      const c = d.candidates && d.candidates[0]; if (!c) continue;
+      for (const part of (c.content && c.content.parts) || []) if (part.text && !part.thought) onText(part.text);
+      if (c.finishReason) finish = c.finishReason;
+    }
+  };
+  for (;;) { const { value, done } = await reader.read(); if (done) break; buf += dec.decode(value, { stream: true }); const parts = buf.split(/\r?\n\r?\n/); buf = parts.pop(); parts.forEach(handle); }
+  if (buf.trim()) handle(buf);
+  return { finish, blocked };
+}
+async function generateOnce(system, contents, temperature, maxTokens, ov, schema) {
+  const o = ov || CUR();
+  const body = { systemInstruction: { parts: [{ text: system }] }, contents, generationConfig: { temperature, maxOutputTokens: maxTokens, ...(schema ? { responseMimeType: 'application/json', responseSchema: schema } : {}) }, safetySettings: SAFETY };
+  let res = await gemFetch(o, 'generateContent', body);
+  if (res.status === 400 && schema) { delete body.generationConfig.responseSchema; res = await gemFetch(o, 'generateContent', body); }
+  if (!res.ok) throw await apiError(res, o.model);
+  const d = await res.json();
+  return ((d.candidates && d.candidates[0] && d.candidates[0].content && d.candidates[0].content.parts) || []).filter(p => p.text && !p.thought).map(p => p.text).join('');
+}
+
+/* ================= CHAT FLOW ================= */
+async function send(text, opts = {}) {
+  if (busy) { if (ctl) ctl.abort(); return; }
+  if (!CUR().key) { openSet(); toast('Najpierw wklej klucz API Gemini.', 'err'); return; }
+  if (text != null) S.messages.push({ role: 'user', text, hidden: !!opts.hidden, ts: Date.now() });
+  save(); renderLog();
+  await generate();
+}
+
+async function generate() {
+  busy = true; ctl = new AbortController(); updateButtons();
+  const holder = document.createElement('div');
+  const typing = '<span class="typing"><i></i><i></i><i></i></span>';
+  holder.innerHTML = typing; log.appendChild(holder); toBottom();
+  const sc = A();
+  const terms = sc.kind === 'custom' ? [] : futureTerms(KB, S.point);
+  const allowed = S.messages.filter(m => m.role === 'user' && !m.hidden && !m.divider).slice(-4).map(m => m.text).join(' ');
+  let acc = '', errMsg = '', extra = '', leaks = [], cleaned = false;
+  try {
+    for (let attempt = 0; attempt < 2; attempt++) {
+      acc = ''; holder.innerHTML = typing;
+      const pr = S.kind === 'custom' ? buildCustomParts(S, extra) : buildParts(S, KB, extra, ctxBudget());
+      const { finish, blocked } = await streamGemini(pr.system, withTail(toContents(), pr.tail), t => {
+        const stick = nearBottom(); acc += t; holder.innerHTML = messageHTML(acc); if (stick) toBottom();
+      });
+      if (blocked) { errMsg = `Dostawca zablokował tę wiadomość (${blocked}). Sformułuj ją inaczej.`; break; }
+      if (acc.trim().length < 220 && /^(i'?m sorry|sorry, but|i can(?:'|no)t (help|assist|comply|continue)|przepraszam, ale|nie mogę (pomóc|kontynuować))/i.test(acc.trim())) { errMsg = 'Model odmówił odpowiedzi (filtr bezpieczeństwa). Kliknij „Ponów”, obniż brutalność w ustawieniach albo wybierz inny model.'; acc = ''; break; }
+      if (!acc.trim()) { errMsg = `Model nie zwrócił tekstu${finish && finish !== 'STOP' ? ' (' + finish + ')' : ''}. Kliknij „Ponów".`; break; }
+      if (/^(length|MAX_TOKENS)$/.test(finish || '')) acc = trimSentence(acc);
+      leaks = findLeaks(acc, terms, allowed);
+      const issues = checkReply(acc, sc);
+      if (!leaks.length && !issues.length) break;
+      if (attempt === 1) { if (leaks.length) { const c = stripLeaks(acc, leaks); if (c.trim()) { acc = c; cleaned = true; } leaks = []; } break; }
+      extra = (leaks.length ? `Your previous draft mentioned things that do not exist yet in this story: ${leaks.join(', ')}. Do not mention, name or hint at any of them. ` : '') + issues.join(' ') + ' Rewrite the reply and fix this.';
+    }
+  } catch (e) { if (e.name !== 'AbortError') errMsg = e.message || 'Nieznany błąd.'; }
+  if (acc.trim()) { sc.messages.push({ role: 'model', text: acc.trim(), ts: Date.now() }); save(); }
+  busy = false; ctl = null; renderLog(); renderSide();
+  if (sc !== A()) return;
+  if (errMsg) { const d = document.createElement('div'); d.className = 'err'; d.textContent = errMsg; log.appendChild(d); toBottom(); }
+  else {
+    if (leaks.length) toast('Uwaga: odpowiedź może zahaczać o wątek z przyszłości: ' + leaks.join(', ') + '. Kliknij „Ponów".');
+    if (cleaned) toast('Usunięto z odpowiedzi zdanie z wątkiem z przyszłości.', 'ok');
+    updateMemory();
+  }
+}
+
+function addNote(text, divider) { S.messages.push({ role: 'user', hidden: true, text, divider: divider || undefined, ts: Date.now() }); }
+
+function undo() {
+  if (busy) return;
+  while (S.messages.length && (S.messages[S.messages.length - 1].role === 'model' || S.messages[S.messages.length - 1].divider)) S.messages.pop();
+  if (S.messages.length) S.messages.pop();
+  S.summaryUpTo = Math.min(S.summaryUpTo, S.messages.length); S.memAt = Math.min(S.memAt || 0, S.messages.length); S.journal = (S.journal || []).filter(j => j.at <= S.messages.length);
+  save(); renderLog();
+}
+function redo() {
+  if (busy || !S.messages.length) return;
+  while (S.messages.length && S.messages[S.messages.length - 1].role === 'model') S.messages.pop();
+  S.summaryUpTo = Math.min(S.summaryUpTo, S.messages.length); S.memAt = Math.min(S.memAt || 0, S.messages.length); S.journal = (S.journal || []).filter(j => j.at <= S.messages.length);
+  save(); renderLog(); generate();
+}
+
+/* ================= MEMORY (event journal + world state) ================= */
+const MEM_EVERY = 4;
+let memBusy = false, memSkip = 0, memErr = '';
+const MEM_F = { location: ['Location and time', 'where and when the scene is now'], player: ['Player', 'condition, items, injuries'], alive: ['Alive, dead or missing', 'status of every named character'], objects: ['Bodies and objects', 'where important bodies and objects are NOW'], knows: ['Who knows what', 'per character, including who does NOT yet know something important'], trust: ['Trust toward the player', 'per character'], threads: ['Promises and open threads', 'what was promised or is unresolved'], canon: ['Notable changes from the starting setup', 'what has diverged from the original character, world or series canon description'] };
+const MEM_SCHEMA = { type: 'OBJECT', properties: { events: { type: 'ARRAY', items: { type: 'STRING' } }, ...Object.fromEntries(Object.keys(MEM_F).map(k => [k, { type: 'STRING' }])) }, required: ['events', ...Object.keys(MEM_F)] };
+const updateMemChip = () => {
+  const b = $('#memBtn'); if (!b) return; const lag = S.messages.length - (S.memAt || 0), warn = S.messages.length > 0 && lag > 8;
+  b.textContent = 'Pamięć · ' + (S.journal || []).length + (warn ? ' ⚠' : ''); b.classList.toggle('warn', warn);
+  b.title = warn ? `Zapis pamięci jest opóźniony o ${lag} wiadomości` + (memErr ? ': ' + memErr : '') : '';
+};
+async function updateMemory(force) {
+  const sc = A();
+  if (memBusy || (!force && memSkip > 0 && memSkip--)) return;
+  const from = sc.memAt || 0, upto = sc.messages.length, chunk = sc.messages.slice(from);
+  if (chunk.filter(m => !m.divider).length < (force ? 2 : MEM_EVERY)) { if (force) toast('Za mało nowych wiadomości do zapisu.'); return; }
+  memBusy = true;
+  try {
+    const transcript = chunk.map(m => m.divider ? `[--- ${m.divider} ---]` : (m.role === 'user' ? (m.hidden ? '[GM note] ' : 'PLAYER: ') : 'GM: ') + m.text).join('\n\n').slice(-30000);
+    const sys = 'You maintain the memory of an interactive text roleplay' + (sc.kind === 'custom' ? '' : ' set in the TV series FROM') + '. Given the CURRENT WORLD STATE, PINNED FACTS and NEW EVENTS, return JSON with "events": 2-6 short concrete facts from the new events (who did, said or promised what, discoveries, deaths, injuries, moves, objects), written in ' + (S.lang === 'pl' ? 'Polish' : 'English') + ', and these string fields, each a compact updated summary of the WHOLE story so far (keep what is still true, update what changed, never invent; use "none" if empty): ' + Object.entries(MEM_F).map(([k, v]) => `"${k}" = ${v[0]}: ${v[1]}`).join('; ') + '.';
+    const prompt = `CURRENT WORLD STATE:\n${sc.summary || '(empty)'}\n\nPINNED FACTS:\n${(sc.pins || []).join('\n') || '(none)'}\n\nNEW EVENTS:\n${transcript}`;
+    const text = await generateOnce(sys, [{ role: 'user', parts: [{ text: prompt }] }], 0.2, 4096, undefined, MEM_SCHEMA);
+    let j; try { j = JSON.parse(text.replace(/^\s*```(?:json)?|```\s*$/g, '').trim()); } catch (e) { throw new Error('zły format odpowiedzi modelu'); }
+    const ev = (j.events || []).map(x => String(x).trim()).filter(x => x.length > 8);
+    const world = Object.entries(MEM_F).map(([k, v]) => { const x = String(j[k] || '').trim(); return x && !/^(none|n\/a|-)\.?$/i.test(x) ? `- ${v[0]}: ${x}` : ''; }).filter(Boolean).join('\n');
+    if (world.length < 30) throw new Error('pusty stan świata');
+    sc.memUndo = { summary: sc.summary, jlen: sc.journal.length, summaryUpTo: sc.summaryUpTo, memAt: sc.memAt };
+    ev.forEach(t => { if (!sc.journal.some(x => x.t === t)) sc.journal.push({ t, at: upto }); });
+    sc.summary = world; sc.memAt = upto; sc.summaryUpTo = Math.max(sc.summaryUpTo, upto - Math.max(6, histCap() - 4));
+    memSkip = 0; memErr = ''; save();
+    if (sc === A()) toast(`Pamięć zaktualizowana: +${ev.length} zdarzeń w dzienniku.`, 'ok');
+  } catch (e) { memSkip = 1; memErr = e.message; if (force) toast('Nie udało się zaktualizować pamięci: ' + e.message, 'err'); }
+  memBusy = false; updateMemChip();
+}
+
+/* ================= REPLY CHECKS ================= */
+const grams = t => { const w = t.toLowerCase().match(/\p{L}+/gu) || [], g = new Set(); for (let i = 0; i + 2 < w.length; i++) g.add(w.slice(i, i + 3).join(' ')); return g; };
+function sim(a, b) { const A_ = grams(a), B_ = grams(b); if (!A_.size || !B_.size) return 0; let n = 0; A_.forEach(x => B_.has(x) && n++); return n / Math.min(A_.size, B_.size); }
+function trimSentence(t) { if (/[.!?…]["”]?\s*$/.test(t)) return t; let last = -1, m; const re = /[.!?…]["”]?/g; while ((m = re.exec(t))) last = re.lastIndex; return last > t.length * 0.4 ? t.slice(0, last) : t; }
+function stripLeaks(text, leaks) {
+  return text.split(/\n+/).map(l => { const { who, say } = parseLine(l.trim()); const sents = say.split(/(?<=[.!?…"”])\s+/).filter(x => !findLeaks(x, leaks, '').length); return sents.length ? (who ? `**${who}:** ` : '') + sents.join(' ') : ''; }).filter(Boolean).join('\n');
+}
+function checkReply(text, sc) {
+  const out = [], first = n => n.split(/\s+/)[0].toLowerCase();
+  const spk = text.split(/\n+/).map(l => parseLine(l.trim()).who).filter(Boolean).map(cleanName);
+  const me = (sc.playerName || '').trim().toLowerCase();
+  if (spk.some(n => n.toLowerCase() === 'you' || n.toLowerCase() === 'player' || (me && n.toLowerCase() === me))) out.push('You wrote dialogue for the player character; never speak for the player.');
+  if (sc.present && sc.present.length) {
+    const ok = new Set([...sc.present, sc.focus].filter(Boolean).map(first));
+    sc.messages.slice(-6).forEach(m => m.role !== 'user' && m.text.split(/\n+/).forEach(l => { const w = parseLine(l.trim()).who; if (w) ok.add(first(cleanName(w))); }));
+    const known = new Set(charsForKind(sc).map(first));
+    const bad = [...new Set(spk.filter(n => known.has(first(n)) && !ok.has(first(n))))];
+    if (bad.length) out.push(`${bad.join(', ')} speaks but is not in the current scene. Only characters listed as present, or already speaking in the recent messages, may talk.`);
+  }
+  const prev = [...sc.messages].reverse().find(m => m.role === 'model');
+  if (prev && sim(text, prev.text) > 0.45) out.push('The reply repeats the previous one; write something new that moves the scene forward.');
+  return out;
+}
+
+/* ================= DIALOGS ================= */
+const sceneDlg = $('#sceneDlg'), setDlg = $('#setDlg');
+
+function fillScene() {
+  const isCustom = S.kind === 'custom';
+  $('#scenePointRow').hidden = isCustom;
+  if (!isCustom) {
+    const sel = $('#pointSel');
+    sel.innerHTML = KB.eps.map(e => `<option value="${e.idx}">${epName(e)}</option>`).join('');
+    sel.value = S.point;
+    $('#nowPlaying').textContent = `Wszystko po ${epName(epById(S.point))} jest ukryte przed narratorem i postaciami. Wiedzą tylko to, co wydarzyło się do tego momentu.`;
+    $('#nextEp').disabled = S.point >= 40;
+  }
+  $('#locIn').value = S.location;
+
+  document.querySelectorAll('#timeSeg button').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.time === S.time)));
+  const chips = $('#presentChips'); chips.innerHTML = '';
+  for (const n of charsForKind(S)) {
+    const b = document.createElement('button'); b.textContent = n; b.setAttribute('aria-pressed', String(S.present.includes(n)));
+    b.onclick = () => { S.present = S.present.includes(n) ? S.present.filter(x => x !== n) : [...S.present, n]; b.setAttribute('aria-pressed', String(S.present.includes(n))); save(); };
+    chips.appendChild(b);
+  }
+}
+function setPoint(p, why) {
+  if (p === S.point) return;
+  const back = p < S.point;
+  S.point = p;
+  const done = epById(p);
+  if (S.messages.length) {
+    addNote(`(GM note: ${why} The story now stands right after episode ${epLabel(done)} "${done.title}", and everyone knows what happened up to and including it${back ? '; anything later has not happened yet' : ''}. Continue from the player's current situation.)`, `Fabuła po ${epName(done)}`);
+    renderLog();
+  }
+  save(); fillScene(); refreshFocus(); applyTheme(); toast('Fabuła ustawiona po ' + epName(done) + '.', 'ok');
+}
+function setTime(t) {
+  if (t === S.time) return;
+  S.time = t;
+  if (S.messages.length) { addNote(`(GM note: it is now ${t === 'night' ? 'NIGHT' : 'day'}. Continue from this moment.)`, t === 'night' ? 'Zapada noc' : 'Nastaje dzień'); renderLog(); }
+  save(); applyTheme(); toast(t === 'night' ? 'Zapadła noc w fabule.' : 'W fabule nastał dzień.', 'ok');
+  document.querySelectorAll('#timeSeg button').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.time === S.time)));
+}
+
+function openScene() { fillScene(); sceneDlg.showModal(); }
+let fTheme = 'auto', draft = null;
+const SCALAR = { langSel: 'lang', toneSel: 'tone', goreSel: 'gore', emoSel: 'emo', lenSel: 'len', thinkSel: 'think' };
+const LBL = { key: 'Klucz API', model: 'Model', theme: 'Motyw', oled: 'Czysta czerń', lang: 'Język', tone: 'Wulgaryzmy', gore: 'Brutalność', emo: 'Emocje', len: 'Długość', think: 'Namysł modelu', temperature: 'Kreatywność' };
+const setSeg = (id, v) => document.querySelectorAll('#' + id + ' button').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.v === v)));
+function fillProv() {
+  $('#keyIn').value = draft.key; $('#modelIn').value = draft.model; $('#keyLbl').textContent = 'Klucz API Gemini';
+  $('#keyHint').innerHTML = 'Darmowy klucz: <a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener">aistudio.google.com/apikey</a>. Klucz zostaje tylko w tej przeglądarce. Nie wrzucaj tego pliku publicznie z wpisanym kluczem.';
+  $('#modelHint').textContent = 'Modele Flash-Lite mają zwykle największy dzienny limit w darmowym planie. „Pobierz listę" pokaże modele dostępne dla twojego klucza.';
+  $('#modelList').innerHTML = '<option value="gemini-3.5-flash-lite"></option>';
+  $('#connStatus').textContent = ''; $('#connStatus').className = 'hint';
+}
+function usageText() { const u = G.usage, n = u.day === new Date().toISOString().slice(0, 10) ? u.n : 0; return `Dziś z tej przeglądarki: ${n} zapytań. Limity darmowego planu zależą od modelu i się zmieniają; sprawdzisz je w Google AI Studio.`; }
+function fillSet() {
+  draft = { key: G.keys.gemini || '', model: G.models.gemini || 'gemini-3.5-flash-lite' }; fTheme = G.theme;
+  for (const id in SCALAR) $('#' + id).value = G[SCALAR[id]];
+  $('#tempIn').value = G.temperature; $('#oledChk').checked = !!G.oled; setSeg('themeSeg', fTheme); fillProv();
+  $('#usage').textContent = usageText();
+  $('#kbInfo').textContent = `${S.kbOverride ? 'Własna baza' : 'Domyślna baza'}: ${KB.eps.length} odcinków, ${KB.chars.length} sekcji postaci.`;
+  refreshDirty();
+}
+function openSet() { fillSet(); setDlg.showModal(); }
+function changes() {
+  const c = [], t = parseFloat($('#tempIn').value);
+  if (draft.key !== (G.keys.gemini || '')) c.push('key');
+  if (draft.model !== (G.models.gemini || '')) c.push('model');
+  if (fTheme !== G.theme) c.push('theme');
+  if ($('#oledChk').checked !== !!G.oled) c.push('oled');
+  for (const id in SCALAR) if ($('#' + id).value !== G[SCALAR[id]]) c.push(SCALAR[id]);
+  if (!isNaN(t) && t !== G.temperature) c.push('temperature');
+  return c;
+}
+function refreshDirty() { const n = changes().length; $('#setSave').disabled = !n; $('#dirtyMsg').hidden = !n; }
+function saveSettings() {
+  const ch = changes(); if (!ch.length) { toast('Nic się nie zmieniło.'); return; }
+  const t = parseFloat($('#tempIn').value);
+  G.keys = { ...G.keys, gemini: draft.key }; G.models = { ...G.models, gemini: draft.model || 'gemini-3.5-flash-lite' }; G.theme = fTheme; G.oled = $('#oledChk').checked;
+  for (const id in SCALAR) G[SCALAR[id]] = $('#' + id).value;
+  G.temperature = isNaN(t) ? 1 : Math.min(2, Math.max(0, t));
+  save(); applyTheme(); refreshFocus(); renderLog();
+  let ok = false;
+  try { const r = JSON.parse(localStorage.getItem(LS_KEY)); ok = r.G.models.gemini === G.models.gemini && r.G.keys.gemini === G.keys.gemini && r.G.theme === G.theme && r.G.gore === G.gore && r.G.len === G.len && r.G.emo === G.emo && r.G.think === G.think; } catch (e) {}
+  if (ok) toast(`Zapisano i sprawdzono: ${ch.map(k => LBL[k]).join(', ')}. Aktywne: Gemini · ${G.models.gemini}.`, 'ok'); else toast('Nie udało się zapisać w przeglądarce (brak miejsca lub zablokowany zapis).', 'err');
+  $('#usage').textContent = usageText(); refreshDirty();
+}
+function closeSet() {
+  if (changes().length && confirm('Masz niezapisane zmiany. Zapisać je?')) saveSettings();
+  else if (changes().length) toast('Zmiany odrzucone. Ustawienia zostały bez zmian.');
+  setDlg.close();
+}
+async function testConn() {
+  const st = $('#connStatus'), o = { provider: 'gemini', key: draft.key.trim(), model: draft.model.trim() };
+  if (!o.key) { st.textContent = 'Najpierw wpisz klucz API.'; st.className = 'hint bad'; return; }
+  st.textContent = 'Sprawdzam…'; st.className = 'hint'; const t0 = Date.now();
+  try {
+    await generateOnce('Reply with the single word OK.', [{ role: 'user', parts: [{ text: 'Ping' }] }], 0, 200, o);
+    st.textContent = `✓ Działa. Gemini odpowiedział w ${Date.now() - t0} ms (model ${o.model}).` + (changes().length ? ' Kliknij „Zapisz ustawienia", aby tego używać.' : ''); st.className = 'hint ok';
+  } catch (e) { st.textContent = '✗ ' + (e.message || 'Błąd połączenia.'); st.className = 'hint bad'; }
+  $('#usage').textContent = usageText();
+}
+async function loadModels(silent) {
+  const key = draft.key.trim();
+  if (!key) { if (!silent) toast('Najpierw wklej klucz API.', 'err'); return; }
+  try {
+    const res = await fetch(`${BASE}/models?pageSize=200&key=${encodeURIComponent(key)}`);
+    if (!res.ok) throw await apiError(res);
+    const names = ((await res.json()).models || []).filter(m => (m.supportedGenerationMethods || []).includes('generateContent')).map(m => m.name.replace(/^models\//, '')).filter(n => /^gemini/.test(n) && !/tts|image|embed|live|audio|robot|omni|lyria|computer|native/i.test(n));
+    $('#modelList').innerHTML = names.map(n => `<option value="${n}"></option>`).join('');
+    if (!silent) toast(`Znaleziono ${names.length} modeli. Wybierz z listy w polu Model.`, 'ok');
+  } catch (e) { if (!silent) toast(e.message, 'err'); }
+}
+function exportAll() {
+  const d = JSON.parse(localStorage.getItem(LS_KEY) || '{}'); if (d.G) { d.G.keys = null; d.G.apiKey = ''; }
+  const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([JSON.stringify(d)], { type: 'application/json' }));
+  a.download = 'from-bot-kopia-' + new Date().toISOString().slice(0, 10) + '.json'; a.click();
+  G.lastBackup = Date.now(); save(); toast('Kopia zapasowa zapisana w pobranych plikach (bez klucza API).', 'ok');
+}
+
+/* ================= WIRING ================= */
+$('#sceneBtn').onclick = openScene;
+$('#setBtn').onclick = openSet;
+$('#timeBtn').onclick = () => { G.theme = isDark() ? 'light' : 'dark'; save(); applyTheme(); toast('Motyw: ' + (G.theme === 'dark' ? 'ciemny' : 'jasny') + '.', 'ok'); };
+$('#sceneClose').onclick = () => sceneDlg.close();
+$('#setClose').onclick = closeSet;
+$('#setSave').onclick = saveSettings;
+$('#testBtn').onclick = testConn;
+setDlg.addEventListener('cancel', e => { e.preventDefault(); closeSet(); });
+setDlg.addEventListener('input', () => { if (draft) { draft.key = $('#keyIn').value.trim(); draft.model = $('#modelIn').value.trim(); } refreshDirty(); });
+setDlg.addEventListener('change', refreshDirty);
+document.querySelectorAll('#themeSeg button').forEach(b => b.onclick = () => { fTheme = b.dataset.v; setSeg('themeSeg', fTheme); applyTheme(fTheme, $('#oledChk').checked); refreshDirty(); });
+$('#oledChk').addEventListener('change', () => applyTheme(fTheme, $('#oledChk').checked));
+setDlg.addEventListener('close', () => { applyTheme(); renderLog(); });
+sceneDlg.addEventListener('close', () => { S.location = $('#locIn').value.trim(); save(); applyTheme(); toast('Scena zapisana: ' + (S.location || 'bez miejsca') + ', ' + (S.time === 'night' ? 'noc' : 'dzień') + (S.present.length ? ', obecni: ' + S.present.join(', ') : '') + '.', 'ok'); });
+$('#pointSel').onchange = e => setPoint(+e.target.value, 'The story jumped in the timeline.');
+$('#nextEp').onclick = () => setPoint(Math.min(40, S.point + 1), 'The previous episode has concluded.');
+document.querySelectorAll('#timeSeg button').forEach(b => b.onclick = () => setTime(b.dataset.time));
+$('#focusSel').onchange = e => { S.focus = e.target.value; save(); };
+$('#modelsBtn').onclick = () => loadModels(false);
+$('#keyIn').addEventListener('change', () => loadModels(true));
+
+$('#redoBtn').onclick = redo;
+$('#undoBtn').onclick = undo;
+$('#contBtn').onclick = () => send('(GM note: no player input this turn. Let the scene move on by itself for a moment: NPCs act and speak, the world reacts. Do not act for the player.)', { hidden: true });
+
+const input = $('#input');
+const grow = () => { input.style.height = 'auto'; input.style.height = Math.min(input.scrollHeight, 144) + 'px'; };
+input.addEventListener('input', grow);
+input.addEventListener('keydown', e => { if (e.key === 'Enter' && !e.shiftKey && matchMedia('(pointer:fine)').matches) { e.preventDefault(); $('#sendBtn').click(); } });
+$('#sendBtn').onclick = () => {
+  if (busy) { if (ctl) ctl.abort(); return; }
+  const t = input.value.trim(); if (!t) return;
+  if (!S.messages.length) { toast('Najpierw zacznij historię.'); return; }
+  input.value = ''; grow(); send(t);
+};
+
+$('#kbFile').onchange = async e => {
+  const f = e.target.files[0]; if (!f) return;
+  const t = await f.text(); const k = parseKB(t);
+  if (!k.eps.length || !k.chars.length) { toast('Baza musi mieć ten sam format co domyślna (bloki „## S1E1 "Tytuł"").'); }
+  else { S.kbOverride = t; reloadKB(); save(); fillSet(); refreshFocus(); toast('Wczytano własną bazę.', 'ok'); }
+  e.target.value = '';
+};
+$('#kbReset').onclick = () => { S.kbOverride = null; reloadKB(); save(); fillSet(); refreshFocus(); toast('Przywrócono domyślną bazę.', 'ok'); };
+/* ================= KNOWLEDGE BASE VIEWER ================= */
+const kbDlg = $('#kbDlg');
+let kbTab = 'world', kbEditing = false;
+const firstTag = l => { const m = l.match(/\[S(\d)E(\d+)/); return m ? epIdx(+m[1], +m[2]) : 0; };
+const tagHTML = s => escHtml(s).replace(/\[S\d+E\d+[^\]]*\]/g, m => `<span class="tag">${m}</span>`);
+const kbHit = (q, text) => !q || text.toLowerCase().includes(q);
+
+function renderKB() {
+  const body = $('#kbBody'), q = $('#kbSearch').value.trim().toLowerCase(), only = $('#kbOnlyPast').checked;
+  document.querySelectorAll('#kbTabs button').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.tab === kbTab)));
+  $('#kbSearchRow').hidden = kbEditing || kbTab === 'prompt';
+  $('#kbOnlyRow').hidden = kbEditing || kbTab === 'prompt';
+  $('#kbEdit').hidden = kbEditing; $('#kbSave').hidden = !kbEditing; $('#kbCancel').hidden = !kbEditing; $('#kbDl').hidden = kbEditing; $('#kbClose').hidden = kbEditing;
+  if (kbEditing) {
+    body.innerHTML = '<p class="hint">Edytujesz cały plik. Zachowaj format: bloki „## S1E1 "Tytuł"" dla odcinków oraz znaczniki [S1E2] przy faktach o świecie i postaciach.</p><textarea id="kbText" spellcheck="false" aria-label="Tekst bazy wiedzy"></textarea>';
+    $('#kbText').value = KBRAW; return;
+  }
+  const line = l => `<p class="kbl${firstTag(l) > S.point ? ' fut' : ''}">${tagHTML(l.replace(/^- /, ''))}</p>`;
+  let html = '';
+  if (kbTab === 'world') {
+    html = KB.world.map(l => only ? splitBullet(l, S.point).vis : l).filter(l => l && kbHit(q, l)).map(line).join('');
+  } else if (kbTab === 'chars') {
+    for (const c of KB.chars) {
+      const bl = c.bullets.map(b => only ? splitBullet(b, S.point).vis : b).filter(Boolean);
+      if (!bl.length || !kbHit(q, c.header + ' ' + bl.join(' '))) continue;
+      html += `<h3>${escHtml(c.header)}</h3>` + bl.map(line).join('');
+    }
+  } else if (kbTab === 'eps') {
+    html = KB.eps.filter(e => (!only || e.idx <= S.point) && kbHit(q, `S${e.s}E${e.e} ${e.title} ${e.text.join(' ')}`))
+      .map(e => `<details${q ? ' open' : ''} class="${e.idx > S.point ? 'fut' : ''}"><summary>${epLabel(e)} „${escHtml(e.title)}"</summary>${e.text.map(x => `<p class="kbl">${escHtml(x)}</p>`).join('')}</details>`).join('');
+  } else {
+    html = `<p class="hint">Dokładnie ten tekst narrator dostaje przy każdej odpowiedzi, razem z ostatnimi wiadomościami. Zmienia się razem z punktem fabuły, sceną i pamięcią opowieści.</p><pre class="kbpre">${escHtml(buildSystem(S, KB))}</pre>`;
+  }
+  body.innerHTML = html || '<p class="hint">Nic nie pasuje do wyszukiwania.</p>';
+}
+function openKB() { kbEditing = false; renderKB(); kbDlg.showModal(); }
+$('#kbBtn').onclick = openKB;
+$('#kbOpen').onclick = () => { setDlg.close(); openKB(); };
+$('#kbClose').onclick = () => kbDlg.close();
+document.querySelectorAll('#kbTabs button').forEach(b => b.onclick = () => { kbTab = b.dataset.tab; renderKB(); });
+$('#kbSearch').addEventListener('input', renderKB);
+$('#kbOnlyPast').addEventListener('change', renderKB);
+$('#kbEdit').onclick = () => { kbEditing = true; renderKB(); };
+$('#kbCancel').onclick = () => { kbEditing = false; renderKB(); };
+$('#kbSave').onclick = () => {
+  const text = $('#kbText').value; const k = parseKB(text);
+  if (!k.eps.length || !k.chars.length || !k.world.length) { toast('Nie mogę wczytać tego tekstu: brakuje odcinków, postaci lub faktów o świecie.'); return; }
+  S.kbOverride = text === DEFAULT_KB ? null : text; reloadKB(); save(); kbEditing = false; refreshFocus(); fillSet(); renderKB(); toast('Baza zapisana.', 'ok');
+};
+$('#kbDl').onclick = () => {
+  const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([KBRAW], { type: 'text/markdown' })); a.download = 'from-baza-wiedzy.md'; a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 2000);
+};
+
+/* ================= SCENARIOS ================= */
+const side = $('#side'), scDlg = $('#scDlg'), mq = matchMedia('(max-width: 959px)');
+let scEditId = null, scDraft = null, scKind = 'from';
+
+function syncSide() {
+  const open = document.body.classList.contains('side-open');
+  side.inert = mq.matches && !open;
+  $('#menuBtn').setAttribute('aria-expanded', String(open));
+}
+function openSide() { document.body.classList.add('side-open'); syncSide(); const b = side.querySelector('button'); if (b && mq.matches) b.focus(); }
+function closeSide() { if (!document.body.classList.contains('side-open')) return; document.body.classList.remove('side-open'); syncSide(); }
+mq.addEventListener('change', syncSide);
+$('#menuBtn').onclick = () => document.body.classList.contains('side-open') ? closeSide() : openSide();
+$('#scrim').onclick = closeSide;
+document.addEventListener('keydown', e => { if (e.key === 'Escape' && document.body.classList.contains('side-open') && !document.querySelector('dialog[open]')) { closeSide(); $('#menuBtn').focus(); } });
+
+const PENCIL = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20h4L19 9a2.1 2.1 0 0 0-3-3L5 17z"/><path d="M14.5 7.5l2 2"/></svg>';
+function renderSide() {
+  const list = $('#scList'); list.innerHTML = '';
+  const sorted = SC.slice().sort((a, b) => b.updated - a.updated);
+  for (const sc of sorted) {
+    const e = sc.kind === 'custom' ? null : epById(sc.point); const n = sc.messages.filter(m => !m.hidden && !m.divider).length;
+    const row = document.createElement('div'); row.className = 'sc-item'; row.setAttribute('role', 'listitem'); row.setAttribute('aria-current', String(sc.id === G.activeId));
+    row.innerHTML = `<button class="sc-main"><span class="sc-name">${escHtml(sc.name)}</span><span class="sc-meta">${escHtml(sc.playerName || 'gracz')} · ${e ? 'S' + e.s + 'E' + e.e : (sc.kind === 'custom' ? 'własna postać' : '')} · ${n} wiad.</span></button><button class="sc-edit" aria-label="Edytuj scenariusz: ${escHtml(sc.name)}">${PENCIL}</button>`;
+    row.querySelector('.sc-main').onclick = () => switchTo(sc.id);
+    row.querySelector('.sc-edit').onclick = () => openScenarioDialog(sc.id);
+    list.appendChild(row);
+  }
+}
+function renderAll() { applyTheme(); refreshFocus(); renderLog(); renderSide(); }
+function switchTo(id) {
+  if (id === G.activeId) { closeSide(); return; }
+  if (busy && ctl) ctl.abort();
+  G.activeId = id; save(); renderAll(); closeSide();
+}
+
+function scChips() {
+  const box = $('#scChips'); box.innerHTML = '';
+  const avail = characterList(KB, scDraft.point);
+  scDraft.present = scDraft.present.filter(n => avail.includes(n));
+  for (const n of avail) {
+    const b = document.createElement('button'); b.textContent = n; b.setAttribute('aria-pressed', String(scDraft.present.includes(n)));
+    b.onclick = () => { scDraft.present = scDraft.present.includes(n) ? scDraft.present.filter(x => x !== n) : [...scDraft.present, n]; b.setAttribute('aria-pressed', String(scDraft.present.includes(n))); };
+    box.appendChild(b);
+  }
+}
+function scSetTime(t, sel) { scDraft.time = t; document.querySelectorAll((sel || '#scTime') + ' button').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.time === t))); }
+function scSetKind(k) {
+  scKind = k;
+  document.querySelectorAll('#scKindSeg button').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.k === k)));
+  $('#scPresetRow').hidden = k !== 'from'; $('#scStartOnly').hidden = k !== 'from'; $('#scCustomOnly').hidden = k !== 'custom';
+  $('#scStoryLbl').textContent = k === 'custom' ? 'Kim jest twoja postać (opcjonalnie — narrator dopyta w grze, jeśli to zostawisz puste)' : 'Kim jest twoja postać (najlepiej po angielsku)';
+  if (k === 'custom') { $('#scName').value = ''; $('#scPlayer').value = ''; $('#scStory').value = ''; $('#scOpen').value = ''; $('#scNotes').value = ''; }
+  else scApplyPreset($('#scPreset').value || 'julie');
+}
+function scApplyPreset(k) {
+  const p = PRESETS[k];
+  $('#scPresetHint').textContent = p.hint;
+  $('#scName').value = p.name; $('#scPlayer').value = ''; $('#scStory').value = p.backstory; $('#scOpen').value = p.opening; $('#scNotes').value = p.notes;
+  scDraft = { point: p.point, time: p.time, present: p.present.slice(), focus: p.focus };
+  $('#scPoint').value = p.point; $('#scLoc').value = p.location; scSetTime(p.time); scChips();
+}
+function openScenarioDialog(id) {
+  const sc = id ? SC.find(s => s.id === id) : null;
+  scEditId = sc ? sc.id : null;
+  $('#scTitle').textContent = sc ? 'Edytuj scenariusz' : 'Nowy scenariusz';
+  $('#scKindRow').hidden = !!sc; $('#scPresetRow').hidden = !!sc; $('#scEditHint').hidden = !sc; $('#scMemRow').hidden = !sc; $('#scEditActions').hidden = !sc;
+  $('#scSave').textContent = sc ? 'Zapisz' : 'Utwórz';
+  $('#scPoint').innerHTML = KB.eps.map(e => `<option value="${e.idx}">${epName(e)}</option>`).join('');
+  if (sc) {
+    $('#scStartOnly').hidden = true; $('#scCustomOnly').hidden = true;
+    $('#scName').value = sc.name; $('#scPlayer').value = sc.playerName; $('#scStory').value = sc.backstory; $('#scOpen').value = sc.opening; $('#scNotes').value = sc.notes; $('#scMem').value = sc.summary;
+  } else {
+    $('#scPreset').innerHTML = Object.keys(PRESETS).map(k => `<option value="${k}">${escHtml(PRESETS[k].label)}</option>`).join('');
+    $('#scPreset').value = 'julie'; scApplyPreset('julie');
+    $('#scCharName').value = ''; $('#scCharDesc').value = ''; $('#scWorld').value = ''; $('#scOthers').value = ''; $('#scLocC').value = ''; scSetTime('day', '#scTimeC');
+    scSetKind('from');
+  }
+  scDlg.showModal();
+}
+$('#newScBtn').onclick = () => openScenarioDialog(null);
+document.querySelectorAll('#scKindSeg button').forEach(b => b.onclick = () => scSetKind(b.dataset.k));
+document.querySelectorAll('#scTimeC button').forEach(b => b.onclick = () => scSetTime(b.dataset.time, '#scTimeC'));
+$('#scPreset').onchange = e => scApplyPreset(e.target.value);
+$('#scPoint').onchange = e => { scDraft.point = +e.target.value; scChips(); };
+document.querySelectorAll('#scTime button').forEach(b => b.onclick = () => scSetTime(b.dataset.time));
+$('#scCancel').onclick = () => scDlg.close();
+$('#scSave').onclick = () => {
+  const f = { name: $('#scName').value.trim() || 'Nowy scenariusz', playerName: $('#scPlayer').value.trim(), backstory: $('#scStory').value.trim(), opening: $('#scOpen').value.trim(), notes: $('#scNotes').value.trim() };
+  if (scEditId) {
+    Object.assign(SC.find(s => s.id === scEditId), f, { summary: $('#scMem').value });
+    save(); renderAll(); scDlg.close(); toast('Zapisano scenariusz „' + f.name + '”.', 'ok'); return;
+  }
+  let sc;
+  if (scKind === 'custom') {
+    const charName = $('#scCharName').value.trim() || 'Postać';
+    const others = $('#scOthers').value.split(',').map(x => x.trim()).filter(Boolean);
+    sc = newScenario({ ...f, kind: 'custom', charName, charDesc: $('#scCharDesc').value.trim(), world: $('#scWorld').value.trim(), others, time: scDraft.time, location: $('#scLocC').value.trim(), present: [charName, ...others], focus: charName });
+  } else {
+    sc = newScenario({ ...f, kind: 'from', point: +$('#scPoint').value, time: scDraft.time, location: $('#scLoc').value.trim(), present: scDraft.present.slice(), focus: scDraft.focus || '' });
+  }
+  if (busy && ctl) ctl.abort();
+  SC.push(sc); G.activeId = sc.id; save(); renderAll(); scDlg.close(); closeSide(); toast('Utworzono scenariusz „' + sc.name + '”.', 'ok');
+};
+$('#scDup').onclick = () => {
+  const src = SC.find(s => s.id === scEditId); if (!src) return;
+  const cp = JSON.parse(JSON.stringify(src)); cp.id = uid(); cp.name = src.name + ' (kopia)'; cp.created = cp.updated = Date.now();
+  SC.push(cp); G.activeId = cp.id; save(); renderAll(); scDlg.close(); closeSide(); toast('Zduplikowano scenariusz.');
+};
+$('#scDel').onclick = () => {
+  if (SC.length <= 1) { toast('Musi zostać przynajmniej jeden scenariusz.'); return; }
+  const src = SC.find(s => s.id === scEditId); if (!src) return;
+  if (!confirm(`Usunąć scenariusz „${src.name}"? Rozmowa i pamięć tego scenariusza zostaną skasowane.`)) return;
+  if (busy && ctl && src.id === G.activeId) ctl.abort();
+  SC = SC.filter(s => s.id !== src.id);
+  if (!SC.some(s => s.id === G.activeId)) G.activeId = SC[0].id;
+  save(); renderAll(); scDlg.close();
+};
+$('#scReset').onclick = () => {
+  const src = SC.find(s => s.id === scEditId); if (!src) return;
+  if (!confirm('Zacząć ten scenariusz od nowa? Rozmowa i pamięć opowieści zostaną usunięte.')) return;
+  if (busy && ctl && src.id === G.activeId) ctl.abort();
+  src.messages = []; src.summary = ''; src.summaryUpTo = 0; src.journal = []; src.pins = []; src.memAt = 0; src.memUndo = null; save(); renderAll(); scDlg.close();
+};
+$('#scExp').onclick = () => {
+  const src = SC.find(s => s.id === scEditId); if (!src) return;
+  const { messages, summary, summaryUpTo, journal, pins, memAt, memUndo, id, created, updated, ...shareable } = src;
+  const blob = new Blob([JSON.stringify({ type: 'from-scenario', version: 3, scenario: shareable }, null, 1)], { type: 'application/json' });
+  const slug = (src.name || 'postac').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '') || 'postac';
+  const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = slug + '.json'; a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 2000);
+  toast('Wyeksportowano samą postać, bez rozmowy i klucza API — możesz to wysłać znajomemu.', 'ok');
+};
+$('#scImport').onchange = async e => {
+  const f = e.target.files[0]; if (!f) return;
+  try {
+    const d = JSON.parse(await f.text());
+    const src = d.scenario || ((d.name || d.charName || d.backstory) ? d : null);
+    if (!src) throw new Error('bad');
+    const sc = newScenario({ ...src, id: uid(), created: Date.now(), updated: Date.now(), messages: [], summary: '', summaryUpTo: 0, journal: [], pins: [], memAt: 0, memUndo: null });
+    SC.push(sc); G.activeId = sc.id; save(); renderAll(); closeSide(); toast('Scenariusz zaimportowany.', 'ok');
+  } catch (err) { toast('To nie jest poprawny plik scenariusza.', 'err'); }
+  e.target.value = '';
+};
+
+/* ================= MEMORY DIALOG ================= */
+const memDlg = $('#memDlg');
+function fillMem() {
+  $('#memWorld').value = S.summary || ''; $('#memPins').value = (S.pins || []).join('\n');
+  const box = $('#memJ'); box.innerHTML = '';
+  S.journal.slice().reverse().forEach((j, k) => {
+    const i = S.journal.length - 1 - k, r = document.createElement('div'); r.className = 'jrow';
+    r.innerHTML = `<span>${escHtml(j.t)}</span><button class="btn ghost" aria-label="Usuń wpis">✕</button>`;
+    r.querySelector('button').onclick = () => { S.journal.splice(i, 1); save(); fillMem(); updateMemChip(); toast('Usunięto wpis z dziennika.', 'ok'); };
+    box.appendChild(r);
+  });
+  if (!S.journal.length) box.innerHTML = '<p class="hint">Dziennik jest pusty. Pierwszy wpis pojawi się po 4 wiadomościach.</p>';
+  $('#memInfo').textContent = `Pamięć obejmuje ${S.memAt || 0} z ${S.messages.length} wiadomości. Kolejna aktualizacja za ${Math.max(0, MEM_EVERY - (S.messages.length - (S.memAt || 0)))} wiad. Model dostaje stan świata, przypięte fakty i pasujące wpisy z dziennika przy każdej odpowiedzi.${memErr ? ' Ostatni błąd zapisu: ' + memErr + '.' : ''}`;
+  $('#memUndo').disabled = !S.memUndo;
+}
+$('#memBtn').onclick = () => { fillMem(); memDlg.showModal(); };
+$('#memClose').onclick = () => memDlg.close();
+$('#memSave').onclick = () => { S.summary = $('#memWorld').value.trim(); S.pins = $('#memPins').value.split('\n').map(x => x.trim()).filter(Boolean); save(); fillMem(); toast('Pamięć zapisana. Model użyje jej od następnej odpowiedzi.', 'ok'); };
+$('#memNow').onclick = async () => { $('#memNow').disabled = true; await updateMemory(true); $('#memNow').disabled = false; fillMem(); };
+$('#memUndo').onclick = () => { const u = S.memUndo; if (!u) return; S.summary = u.summary; S.journal.length = u.jlen; S.summaryUpTo = u.summaryUpTo; S.memAt = u.memAt; S.memUndo = null; save(); fillMem(); updateMemChip(); toast('Cofnięto ostatnią aktualizację pamięci.', 'ok'); };
+
+$('#expBtn').onclick = exportAll;
+$('#impBtn').onclick = () => $('#impFile').click();
+$('#impFile').onchange = async e => {
+  const f = e.target.files[0]; if (!f) return;
+  try {
+    const d = JSON.parse(await f.text()); if (!Array.isArray(d.SC) || !d.SC.length) throw 0;
+    if (!confirm(`Wczytać kopię (${d.SC.length} scenariuszy)? Obecne scenariusze zostaną zastąpione. Klucz API zostanie.`)) return;
+    d.G = { ...(d.G || {}), keys: G.keys, models: G.models, provider: 'gemini' };
+    localStorage.setItem(LS_KEY, JSON.stringify(d)); location.reload();
+  } catch (err) { toast('To nie wygląda na kopię zapasową tej strony.', 'err'); }
+  e.target.value = '';
+};
+setTimeout(() => { if (S.messages.length > 20 && Date.now() - (G.lastBackup || 0) > 5 * 864e5) toast('Minęło kilka dni od ostatniej kopii zapasowej. Zrób ją w Ustawieniach.'); }, 2500);
+
+if ('serviceWorker' in navigator && /^https?:$/.test(location.protocol)) navigator.serviceWorker.register('sw.js').catch(() => {});
+
+/* ================= INIT ================= */
+syncSide(); renderAll();
+})();
+</script>
+</body>
+</html>
