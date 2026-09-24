@@ -206,6 +206,7 @@ textarea:focus,input:focus,select:focus{border-color:var(--accent)}
       <button id="undoBtn" class="btn ghost">Cofnij</button>
       <button id="contBtn" class="btn ghost">Dalej</button>
       <button id="memBtn" class="btn ghost">Pamięć</button>
+      <button id="histBtn" class="btn ghost">Historia</button>
     </div>
     <div class="row">
       <label class="sr" for="input">Twoja wiadomość</label>
@@ -337,6 +338,14 @@ textarea:focus,input:focus,select:focus{border-color:var(--accent)}
   <div class="field"><label for="memPins">Przypięte fakty (jeden na linię, nigdy nie znikają)</label><textarea id="memPins" placeholder="np. Marielle nie wie, że Jim nie żyje."></textarea></div>
   <div class="field"><span class="lbl">Dziennik zdarzeń (od najnowszych)</span><div id="memJ"></div></div>
   <div class="actions"><button class="btn primary" id="memSave">Zapisz pamięć</button><button class="btn" id="memNow">Zaktualizuj teraz</button><button class="btn" id="memUndo">Cofnij ostatnią aktualizację</button><button class="btn" id="memClose">Zamknij</button></div>
+</div></dialog>
+
+<dialog id="histDlg" aria-labelledby="histTitle"><div class="sheet">
+  <h2 id="histTitle">Historia</h2>
+  <p class="hint" id="histInfo"></p>
+  <p class="hint">Co 40 wiadomości dopisuje się tu nowy rozdział — streszczenie w maksymalnie 8 zdaniach tego, co robił gracz i co działo się w opowieści. Nic tu nie jest nadpisywane, rozdziały tylko przybywają, i wszystkie trafiają do narratora przy każdej odpowiedzi, tak jak stan świata.</p>
+  <div class="field"><span class="lbl">Rozdziały (od najnowszych)</span><div id="histJ"></div></div>
+  <div class="actions"><button class="btn" id="histNow">Zapisz rozdział teraz</button><button class="btn" id="histUndo">Cofnij ostatni rozdział</button><button class="btn" id="histClose">Zamknij</button></div>
 </div></dialog>
 
 <script type="text/plain" id="kb">
@@ -834,7 +843,8 @@ Location: ${S.location || 'unspecified'}
 Characters present: ${S.present && S.present.length ? S.present.join(', ') : 'nobody (the player is alone)'}`;
   const focus = S.focus ? `\n\n## FOCUS\nThe player is mainly talking to ${S.focus}. ${S.focus} answers first and gets most of the reply; other characters join only if it is natural. Keep narration minimal.` : '';
   const memory = `## WORLD STATE (the player's own story; it overrides the starting facts wherever they differ, e.g. a body that was moved)\n${S.summary && S.summary.trim() ? S.summary.trim() : '(the story has only just begun)'}${(S.pins || []).length ? '\n\n## PINNED FACTS (always true)\n- ' + S.pins.join('\n- ') : ''}${pickEvents(S).length ? '\n\n## EARLIER EVENTS (most relevant)\n- ' + pickEvents(S).join('\n- ') : ''}`;
-  return [scene + focus, memory, '## REMINDER\n- ' + lenLine + ' Spoken lines are 1-3 sentences of real speech.\n- ' + emoLine + '\n- Answer what the player just did or said; obey the WORLD STATE and who is present.', extra ? '## CORRECTION\n' + extra : ''].filter(Boolean).join('\n\n');
+  const history = (S.chapters && S.chapters.length) ? '## STORY HISTORY (long-term summary of the whole story, oldest first)\n' + S.chapters.map((c, i) => `Rozdział ${i + 1}: ${c.t}`).join('\n') : '';
+  return [scene + focus, history, memory, '## REMINDER\n- ' + lenLine + ' Spoken lines are 1-3 sentences of real speech.\n- ' + emoLine + '\n- Answer what the player just did or said; obey the WORLD STATE and who is present.', extra ? '## CORRECTION\n' + extra : ''].filter(Boolean).join('\n\n');
 }
 function buildCustomParts(S, extra) {
   const { langLine, toneLine, emoLine, goreLine, lenLine } = styleLines(S);
@@ -1061,7 +1071,7 @@ const PRESETS = {
 
 const GLOBAL_KEYS = ['apiKey', 'model', 'provider', 'keys', 'models', 'theme', 'oled', 'gore', 'emo', 'len', 'ctx', 'usage', 'think', 'lastBackup', 'temperature', 'lang', 'tone', 'kbOverride'];
 const uid = () => 's' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
-const newScenario = (over = {}) => ({ id: uid(), name: 'Nowy scenariusz', playerName: '', backstory: '', opening: '', notes: '', kind: 'from', point: 2, time: 'day', location: '', present: [], focus: '', charName: '', charDesc: '', world: '', others: [], messages: [], summary: '', summaryUpTo: 0, journal: [], pins: [], memAt: 0, memUndo: null, deadNow: [], created: Date.now(), updated: Date.now(), ...over });
+const newScenario = (over = {}) => ({ id: uid(), name: 'Nowy scenariusz', playerName: '', backstory: '', opening: '', notes: '', kind: 'from', point: 2, time: 'day', location: '', present: [], focus: '', charName: '', charDesc: '', world: '', others: [], messages: [], summary: '', summaryUpTo: 0, journal: [], pins: [], memAt: 0, memUndo: null, deadNow: [], chapters: [], chapterAt: 0, chapterUndo: null, created: Date.now(), updated: Date.now(), ...over });
 const fromPreset = k => { const p = PRESETS[k]; return newScenario({ name: p.name, backstory: p.backstory, opening: p.opening, notes: p.notes, point: p.point, time: p.time, location: p.location, present: p.present.slice(), focus: p.focus }); };
 
 let G = { ver: 3, apiKey: '', model: 'gemini-3.5-flash-lite', provider: 'gemini', keys: null, models: null, theme: 'auto', oled: false, gore: 'medium', emo: 'expressive', len: 'medium', ctx: 'auto', usage: { day: '', n: 0, left: null }, think: 'auto', lastBackup: 0, temperature: 0.85, lang: 'en', tone: 'natural', kbOverride: null, activeId: null };
@@ -1198,7 +1208,7 @@ function msgActs(m, i) {
     });
     add('To błędne', () => { const t = prompt('Co jest nie tak i jak jest naprawdę? To trafi do przypiętych faktów.'); if (t && t.trim()) { S.pins = [...(S.pins || []), t.trim()]; save(); toast('Dodano do przypiętych faktów. Model użyje tego od następnej odpowiedzi.', 'ok'); } });
   }
-  add('Usuń', () => { if (!confirm('Usunąć tę wiadomość?')) return; S.messages.splice(i, 1); if (i < (S.memAt || 0)) S.memAt--; if (i < S.summaryUpTo) S.summaryUpTo--; save(); renderLog(); toast('Wiadomość usunięta.', 'ok'); });
+  add('Usuń', () => { if (!confirm('Usunąć tę wiadomość?')) return; S.messages.splice(i, 1); if (i < (S.memAt || 0)) S.memAt--; if (i < S.summaryUpTo) S.summaryUpTo--; if (i < (S.chapterAt || 0)) S.chapterAt--; S.chapters = (S.chapters || []).filter(c => c.at <= S.messages.length); save(); renderLog(); toast('Wiadomość usunięta.', 'ok'); });
   return r;
 }
 
@@ -1209,7 +1219,7 @@ function startNote() {
 }
 
 function updateButtons() {
-  updateMemChip();
+  updateMemChip(); updateHistChip();
   $('#sendBtn').textContent = busy ? 'Stop' : 'Wyślij';
   const started = S.messages.length > 0;
   $('#redoBtn').disabled = busy || !started;
@@ -1332,7 +1342,7 @@ async function generate() {
   else {
     if (leaks.length) toast('Uwaga: odpowiedź może zahaczać o wątek z przyszłości: ' + leaks.join(', ') + '. Kliknij „Ponów".');
     if (cleaned) toast('Usunięto z odpowiedzi zdanie z wątkiem z przyszłości.', 'ok');
-    updateMemory();
+    updateMemory(); updateChapter();
   }
 }
 
@@ -1343,6 +1353,7 @@ function undo() {
   while (S.messages.length && (S.messages[S.messages.length - 1].role === 'model' || S.messages[S.messages.length - 1].divider)) S.messages.pop();
   if (S.messages.length) S.messages.pop();
   S.summaryUpTo = Math.min(S.summaryUpTo, S.messages.length); S.memAt = Math.min(S.memAt || 0, S.messages.length); S.journal = (S.journal || []).filter(j => j.at <= S.messages.length);
+  S.chapterAt = Math.min(S.chapterAt || 0, S.messages.length); S.chapters = (S.chapters || []).filter(c => c.at <= S.messages.length);
   save(); renderLog();
 }
 function redo() {
@@ -1352,6 +1363,7 @@ function redo() {
   if (last && last.role === 'model') carry = (last.alts && last.alts.length ? last.alts.slice() : [last.text]);
   while (S.messages.length && S.messages[S.messages.length - 1].role === 'model') S.messages.pop();
   S.summaryUpTo = Math.min(S.summaryUpTo, S.messages.length); S.memAt = Math.min(S.memAt || 0, S.messages.length); S.journal = (S.journal || []).filter(j => j.at <= S.messages.length);
+  S.chapterAt = Math.min(S.chapterAt || 0, S.messages.length); S.chapters = (S.chapters || []).filter(c => c.at <= S.messages.length);
   save(); renderLog();
   generate().then(() => {
     if (!carry) return;
@@ -1399,6 +1411,35 @@ async function updateMemory(force) {
     if (sc === A()) { toast(`Pamięć zaktualizowana: +${ev.length} zdarzeń w dzienniku.${sceneNote}`, 'ok'); refreshFocus(); }
   } catch (e) { memSkip = 1; memErr = e.message; if (force) toast('Nie udało się zaktualizować pamięci: ' + e.message, 'err'); }
   memBusy = false; updateMemChip();
+}
+
+const CHAPTER_EVERY = 40;
+let histBusy = false, histSkip = 0, histErr = '';
+const updateHistChip = () => {
+  const b = $('#histBtn'); if (!b) return; const lag = S.messages.length - (S.chapterAt || 0), warn = S.messages.length > 0 && lag > CHAPTER_EVERY * 2;
+  b.textContent = 'Historia · ' + (S.chapters || []).length + (warn ? ' ⚠' : ''); b.classList.toggle('warn', warn);
+  b.title = warn ? `Zapis historii jest opóźniony o ${lag} wiadomości` + (histErr ? ': ' + histErr : '') : '';
+};
+const capSentences = (t, n) => { const p = t.match(/[^.!?…]+[.!?…]*/g) || [t]; return p.slice(0, n).join('').trim(); };
+async function updateChapter(force) {
+  const sc = A();
+  if (histBusy || (!force && histSkip > 0 && histSkip--)) return;
+  const from = sc.chapterAt || 0, upto = sc.messages.length, chunk = sc.messages.slice(from);
+  if (chunk.filter(m => !m.divider).length < (force ? 2 : CHAPTER_EVERY)) { if (force) toast('Za mało nowych wiadomości na rozdział.'); return; }
+  histBusy = true;
+  try {
+    const transcript = chunk.map(m => m.divider ? `[--- ${m.divider} ---]` : (m.role === 'user' ? (m.hidden ? '[GM note] ' : 'PLAYER: ') : 'GM: ') + m.text).join('\n\n').slice(-60000);
+    const sys = 'You write long-term chapter summaries for an interactive text roleplay' + (sc.kind === 'custom' ? '' : ' set in the TV series FROM') + '. Summarize the STRETCH OF STORY below in at most 8 sentences, in ' + (S.lang === 'pl' ? 'Polish' : 'English') + '. Cover the concrete things the player did or said and what happened in the story in response (events, decisions, discoveries, turning points). Be specific (names, places, what changed), skip flavor and dialogue quotes. Plain prose, no headings, no bullet points, no meta-commentary — just the summary text.';
+    const prompt = `STRETCH OF STORY:\n${transcript}\n\nWrite the summary now, 8 sentences or fewer.`;
+    let text = (await generateOnce(sys, [{ role: 'user', parts: [{ text: prompt }] }], 0.3, 700)).trim();
+    text = capSentences(text.replace(/^```[a-z]*\n?|```$/g, '').trim(), 8);
+    if (text.length < 20) throw new Error('pusty rozdział');
+    sc.chapterUndo = { len: sc.chapters.length, chapterAt: sc.chapterAt };
+    sc.chapters.push({ t: text, at: upto }); sc.chapterAt = upto;
+    histSkip = 0; histErr = ''; save();
+    if (sc === A()) { toast(`Historia zaktualizowana: dodano rozdział ${sc.chapters.length}.`, 'ok'); updateHistChip(); }
+  } catch (e) { histSkip = 1; histErr = e.message; if (force) toast('Nie udało się zapisać rozdziału: ' + e.message, 'err'); }
+  histBusy = false; updateHistChip();
 }
 
 /* ================= REPLY CHECKS ================= */
@@ -1769,11 +1810,11 @@ $('#scReset').onclick = () => {
   const src = SC.find(s => s.id === scEditId); if (!src) return;
   if (!confirm('Zacząć ten scenariusz od nowa? Rozmowa i pamięć opowieści zostaną usunięte.')) return;
   if (busy && ctl && src.id === G.activeId) ctl.abort();
-  src.messages = []; src.summary = ''; src.summaryUpTo = 0; src.journal = []; src.pins = []; src.memAt = 0; src.memUndo = null; save(); renderAll(); scDlg.close();
+  src.messages = []; src.summary = ''; src.summaryUpTo = 0; src.journal = []; src.pins = []; src.memAt = 0; src.memUndo = null; src.deadNow = []; src.chapters = []; src.chapterAt = 0; src.chapterUndo = null; save(); renderAll(); scDlg.close();
 };
 $('#scExp').onclick = () => {
   const src = SC.find(s => s.id === scEditId); if (!src) return;
-  const { messages, summary, summaryUpTo, journal, pins, memAt, memUndo, id, created, updated, ...shareable } = src;
+  const { messages, summary, summaryUpTo, journal, pins, memAt, memUndo, deadNow, chapters, chapterAt, chapterUndo, id, created, updated, ...shareable } = src;
   const blob = new Blob([JSON.stringify({ type: 'from-scenario', version: 3, scenario: shareable }, null, 1)], { type: 'application/json' });
   const slug = (src.name || 'postac').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '') || 'postac';
   const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = slug + '.json'; a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 2000);
@@ -1785,14 +1826,14 @@ $('#scImport').onchange = async e => {
     const d = JSON.parse(await f.text());
     const src = d.scenario || ((d.name || d.charName || d.backstory) ? d : null);
     if (!src) throw new Error('bad');
-    const sc = newScenario({ ...src, id: uid(), created: Date.now(), updated: Date.now(), messages: [], summary: '', summaryUpTo: 0, journal: [], pins: [], memAt: 0, memUndo: null });
+    const sc = newScenario({ ...src, id: uid(), created: Date.now(), updated: Date.now(), messages: [], summary: '', summaryUpTo: 0, journal: [], pins: [], memAt: 0, memUndo: null, deadNow: [], chapters: [], chapterAt: 0, chapterUndo: null });
     SC.push(sc); G.activeId = sc.id; save(); renderAll(); closeSide(); toast('Scenariusz zaimportowany.', 'ok');
   } catch (err) { toast('To nie jest poprawny plik scenariusza.', 'err'); }
   e.target.value = '';
 };
 
 /* ================= MEMORY DIALOG ================= */
-const memDlg = $('#memDlg');
+const memDlg = $('#memDlg'), histDlg = $('#histDlg');
 function fillMem() {
   $('#memWorld').value = S.summary || ''; $('#memPins').value = (S.pins || []).join('\n');
   const box = $('#memJ'); box.innerHTML = '';
@@ -1811,6 +1852,23 @@ $('#memClose').onclick = () => memDlg.close();
 $('#memSave').onclick = () => { S.summary = $('#memWorld').value.trim(); S.pins = $('#memPins').value.split('\n').map(x => x.trim()).filter(Boolean); save(); fillMem(); toast('Pamięć zapisana. Model użyje jej od następnej odpowiedzi.', 'ok'); };
 $('#memNow').onclick = async () => { $('#memNow').disabled = true; await updateMemory(true); $('#memNow').disabled = false; fillMem(); };
 $('#memUndo').onclick = () => { const u = S.memUndo; if (!u) return; S.summary = u.summary; S.journal.length = u.jlen; S.summaryUpTo = u.summaryUpTo; S.memAt = u.memAt; if (u.present) S.present = u.present; if (u.location != null) S.location = u.location; if (u.deadNow) S.deadNow = u.deadNow; S.memUndo = null; save(); fillMem(); updateMemChip(); refreshFocus(); toast('Cofnięto ostatnią aktualizację pamięci.', 'ok'); };
+
+function fillHist() {
+  const box = $('#histJ'); box.innerHTML = '';
+  (S.chapters || []).slice().reverse().forEach((c, k) => {
+    const i = S.chapters.length - 1 - k, r = document.createElement('div'); r.className = 'jrow';
+    r.innerHTML = `<span><b>Rozdział ${i + 1}</b> (do wiad. ${c.at}) — ${escHtml(c.t)}</span><button class="btn ghost" aria-label="Usuń rozdział">✕</button>`;
+    r.querySelector('button').onclick = () => { if (!confirm('Usunąć ten rozdział historii?')) return; S.chapters.splice(i, 1); save(); fillHist(); updateHistChip(); toast('Usunięto rozdział.', 'ok'); };
+    box.appendChild(r);
+  });
+  if (!(S.chapters || []).length) box.innerHTML = '<p class="hint">Historia jest jeszcze pusta. Pierwszy rozdział pojawi się po 40 wiadomościach.</p>';
+  $('#histInfo').textContent = `Historia obejmuje ${S.chapterAt || 0} z ${S.messages.length} wiadomości. Kolejny rozdział za ${Math.max(0, CHAPTER_EVERY - (S.messages.length - (S.chapterAt || 0)))} wiad.${histErr ? ' Ostatni błąd zapisu: ' + histErr + '.' : ''}`;
+  $('#histUndo').disabled = !S.chapterUndo;
+}
+$('#histBtn').onclick = () => { fillHist(); histDlg.showModal(); };
+$('#histClose').onclick = () => histDlg.close();
+$('#histNow').onclick = async () => { $('#histNow').disabled = true; await updateChapter(true); $('#histNow').disabled = false; fillHist(); };
+$('#histUndo').onclick = () => { const u = S.chapterUndo; if (!u) return; S.chapters.length = u.len; S.chapterAt = u.chapterAt; S.chapterUndo = null; save(); fillHist(); updateHistChip(); toast('Cofnięto ostatni rozdział.', 'ok'); };
 
 $('#updBtn').onclick = checkForUpdate;
 $('#expBtn').onclick = exportAll;
