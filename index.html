@@ -343,9 +343,9 @@ textarea:focus,input:focus,select:focus{border-color:var(--accent)}
 <dialog id="histDlg" aria-labelledby="histTitle"><div class="sheet">
   <h2 id="histTitle">Historia</h2>
   <p class="hint" id="histInfo"></p>
-  <p class="hint">Co 40 wiadomości dopisuje się tu nowy rozdział — streszczenie w maksymalnie 8 zdaniach tego, co robił gracz i co działo się w opowieści. Nic tu nie jest nadpisywane, rozdziały tylko przybywają, i wszystkie trafiają do narratora przy każdej odpowiedzi, tak jak stan świata.</p>
+  <p class="hint">Co 40 wiadomości dopisuje się tu nowy rozdział — streszczenie w maksymalnie 8 zdaniach tego, co robił gracz i co działo się w opowieści. Nic tu nie jest nadpisywane, rozdziały tylko przybywają, i wszystkie trafiają do narratora przy każdej odpowiedzi, tak jak stan świata. „Uzupełnij całą historię” dogania zaległość działając w porcjach po 40 wiadomości, aż dojdzie do końca — przy długiej rozmowie to kilka albo kilkanaście zapytań pod rząd.</p>
   <div class="field"><span class="lbl">Rozdziały (od najnowszych)</span><div id="histJ"></div></div>
-  <div class="actions"><button class="btn" id="histNow">Zapisz rozdział teraz</button><button class="btn" id="histUndo">Cofnij ostatni rozdział</button><button class="btn" id="histClose">Zamknij</button></div>
+  <div class="actions"><button class="btn primary" id="histFill">Uzupełnij całą historię</button><button class="btn" id="histNow">Zapisz rozdział teraz</button><button class="btn" id="histUndo">Cofnij ostatni rozdział</button><button class="btn" id="histClose">Zamknij</button></div>
 </div></dialog>
 
 <script type="text/plain" id="kb">
@@ -1423,9 +1423,11 @@ const updateHistChip = () => {
 const capSentences = (t, n) => { const p = t.match(/[^.!?…]+[.!?…]*/g) || [t]; return p.slice(0, n).join('').trim(); };
 async function updateChapter(force) {
   const sc = A();
-  if (histBusy || (!force && histSkip > 0 && histSkip--)) return;
-  const from = sc.chapterAt || 0, upto = sc.messages.length, chunk = sc.messages.slice(from);
-  if (chunk.filter(m => !m.divider).length < (force ? 2 : CHAPTER_EVERY)) { if (force) toast('Za mało nowych wiadomości na rozdział.'); return; }
+  if (histBusy || (!force && histSkip > 0 && histSkip--)) return 'skip';
+  const from = sc.chapterAt || 0;
+  if (sc.messages.length - from < (force ? 2 : CHAPTER_EVERY)) { if (force) toast('Za mało nowych wiadomości na rozdział.'); return 'done'; }
+  const upto = Math.min(sc.messages.length, from + CHAPTER_EVERY); // bound to ONE window, even with a much bigger backlog
+  const chunk = sc.messages.slice(from, upto);
   histBusy = true;
   try {
     const transcript = chunk.map(m => m.divider ? `[--- ${m.divider} ---]` : (m.role === 'user' ? (m.hidden ? '[GM note] ' : 'PLAYER: ') : 'GM: ') + m.text).join('\n\n').slice(-60000);
@@ -1438,8 +1440,27 @@ async function updateChapter(force) {
     sc.chapters.push({ t: text, at: upto }); sc.chapterAt = upto;
     histSkip = 0; histErr = ''; save();
     if (sc === A()) { toast(`Historia zaktualizowana: dodano rozdział ${sc.chapters.length}.`, 'ok'); updateHistChip(); }
-  } catch (e) { histSkip = 1; histErr = e.message; if (force) toast('Nie udało się zapisać rozdziału: ' + e.message, 'err'); }
-  histBusy = false; updateHistChip();
+    return 'ok';
+  } catch (e) { histSkip = 1; histErr = e.message; if (force) toast('Nie udało się zapisać rozdziału: ' + e.message, 'err'); return 'err'; }
+  finally { histBusy = false; updateHistChip(); }
+}
+async function backfillHistory() {
+  const btn = $('#histFill'); if (btn.disabled) return;
+  btn.disabled = true; btn.textContent = 'Uzupełnianie…';
+  const scId = A().id; let n = 0;
+  while (true) {
+    const sc = A();
+    if (sc.id !== scId) break;
+    if (sc.messages.length - (sc.chapterAt || 0) < 2) break;
+    const res = await updateChapter(true);
+    fillHist();
+    if (res !== 'ok') { if (res === 'err') toast('Zatrzymano: ' + (histErr || 'błąd zapisu') + '. Możesz spróbować ponownie.', 'err'); break; }
+    n++;
+    if (n >= 60) { toast('Zatrzymano po 60 rozdziałach na raz — kliknij jeszcze raz, jeśli zostało więcej.'); break; }
+    await new Promise(r => setTimeout(r, 250));
+  }
+  btn.disabled = false; btn.textContent = 'Uzupełnij całą historię';
+  if (n) toast(`Uzupełniono historię: dodano ${n} ${n === 1 ? 'rozdział' : (n < 5 ? 'rozdziały' : 'rozdziałów')}.`, 'ok');
 }
 
 /* ================= REPLY CHECKS ================= */
@@ -1858,15 +1879,17 @@ function fillHist() {
   (S.chapters || []).slice().reverse().forEach((c, k) => {
     const i = S.chapters.length - 1 - k, r = document.createElement('div'); r.className = 'jrow';
     r.innerHTML = `<span><b>Rozdział ${i + 1}</b> (do wiad. ${c.at}) — ${escHtml(c.t)}</span><button class="btn ghost" aria-label="Usuń rozdział">✕</button>`;
-    r.querySelector('button').onclick = () => { if (!confirm('Usunąć ten rozdział historii?')) return; S.chapters.splice(i, 1); save(); fillHist(); updateHistChip(); toast('Usunięto rozdział.', 'ok'); };
+    r.querySelector('button').onclick = () => { if (!confirm('Usunąć ten rozdział historii? Jeśli to ostatni, historia cofnie się, żeby można ją było uzupełnić od nowa.')) return; const wasLast = i === S.chapters.length - 1; S.chapters.splice(i, 1); if (wasLast) S.chapterAt = i > 0 ? S.chapters[i - 1].at : 0; save(); fillHist(); updateHistChip(); toast('Usunięto rozdział.', 'ok'); };
     box.appendChild(r);
   });
   if (!(S.chapters || []).length) box.innerHTML = '<p class="hint">Historia jest jeszcze pusta. Pierwszy rozdział pojawi się po 40 wiadomościach.</p>';
-  $('#histInfo').textContent = `Historia obejmuje ${S.chapterAt || 0} z ${S.messages.length} wiadomości. Kolejny rozdział za ${Math.max(0, CHAPTER_EVERY - (S.messages.length - (S.chapterAt || 0)))} wiad.${histErr ? ' Ostatni błąd zapisu: ' + histErr + '.' : ''}`;
+  const backlog = Math.max(0, S.messages.length - (S.chapterAt || 0));
+  $('#histInfo').textContent = `Historia obejmuje ${S.chapterAt || 0} z ${S.messages.length} wiadomości.` + (backlog >= CHAPTER_EVERY ? ` Do uzupełnienia: ok. ${Math.floor(backlog / CHAPTER_EVERY)} ${Math.floor(backlog / CHAPTER_EVERY) === 1 ? 'rozdział' : 'rozdziałów'} (kliknij „Uzupełnij całą historię”).` : ` Kolejny rozdział za ${CHAPTER_EVERY - backlog} wiad.`) + (histErr ? ` Ostatni błąd zapisu: ${histErr}.` : '');
   $('#histUndo').disabled = !S.chapterUndo;
 }
 $('#histBtn').onclick = () => { fillHist(); histDlg.showModal(); };
 $('#histClose').onclick = () => histDlg.close();
+$('#histFill').onclick = backfillHistory;
 $('#histNow').onclick = async () => { $('#histNow').disabled = true; await updateChapter(true); $('#histNow').disabled = false; fillHist(); };
 $('#histUndo').onclick = () => { const u = S.chapterUndo; if (!u) return; S.chapters.length = u.len; S.chapterAt = u.chapterAt; S.chapterUndo = null; save(); fillHist(); updateHistChip(); toast('Cofnięto ostatni rozdział.', 'ok'); };
 
