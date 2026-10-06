@@ -98,6 +98,7 @@ dialog::backdrop{background:rgba(4,10,12,.6)}
 hr{border:none;border-top:1px solid var(--line);margin:1.3rem 0}
 
 #toast{position:fixed;left:50%;bottom:calc(env(safe-area-inset-bottom,0px) + 6.5rem);transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:.5rem .9rem;border-radius:10px;font-size:.92rem;max-width:90vw;opacity:0;pointer-events:none;transition:opacity .25s;z-index:20}
+#toast{top:auto;margin:0;border:0;overflow:visible}
 #toast.on{opacity:1}
 [hidden]{display:none !important}
 .sheet>.actions:last-child{position:sticky;bottom:calc(-1 * (env(safe-area-inset-bottom,0px) + 1.1rem));background:var(--panel);margin:1rem -1.1rem calc(-1 * (env(safe-area-inset-bottom,0px) + 1.1rem));padding:.7rem 1.1rem calc(env(safe-area-inset-bottom,0px) + .8rem);border-top:1px solid var(--line)}
@@ -167,7 +168,7 @@ textarea:focus,input:focus,select:focus{border-color:var(--accent)}
 #memWorld,#memPins{min-height:9rem}
 .acts{display:flex;gap:.4rem;flex-wrap:wrap;margin:.25rem 0 .6rem}.you+.acts{justify-content:flex-end}
 .acts .btn{min-height:2.1rem;padding:.3rem .8rem;font-size:.9rem}
-#memBtn.warn{border-color:var(--danger,#b3261e);color:var(--danger,#b3261e)}
+#memBtn.warn,#moreBtn.warn{border-color:var(--danger,#b3261e);color:var(--danger,#b3261e)}
 </style>
 </head>
 <body>
@@ -205,8 +206,9 @@ textarea:focus,input:focus,select:focus{border-color:var(--accent)}
       <button id="redoBtn" class="btn ghost">Ponów</button>
       <button id="undoBtn" class="btn ghost">Cofnij</button>
       <button id="contBtn" class="btn ghost">Dalej</button>
-      <button id="memBtn" class="btn ghost">Pamięć</button>
-      <button id="histBtn" class="btn ghost">Historia</button>
+      <button id="moreBtn" class="btn ghost" aria-expanded="false" aria-label="Więcej: pamięć i historia">⋯</button>
+      <button id="memBtn" class="btn ghost" hidden>Pamięć</button>
+      <button id="histBtn" class="btn ghost" hidden>Historia</button>
     </div>
     <div class="row">
       <label class="sr" for="input">Twoja wiadomość</label>
@@ -219,7 +221,7 @@ textarea:focus,input:focus,select:focus{border-color:var(--accent)}
 </div>
 <div id="scrim"></div>
 
-<div id="toast" role="status" aria-live="polite"></div>
+<div id="toast" role="status" aria-live="polite" popover="manual"></div>
 
 <dialog id="sceneDlg" aria-labelledby="sceneTitle"><div class="sheet">
   <h2 id="sceneTitle">Scena</h2>
@@ -251,13 +253,14 @@ textarea:focus,input:focus,select:focus{border-color:var(--accent)}
 
 <dialog id="setDlg" aria-labelledby="setTitle"><div class="sheet">
   <h2 id="setTitle">Ustawienia</h2>
-  <section class="card"><h3>Połączenie z Gemini</h3>
+  <div class="seg" id="setTabs" role="group" aria-label="Sekcje ustawień"><button data-st="conn">Połączenie</button><button data-st="talk">Rozmowa</button><button data-st="adult">18+</button><button data-st="look">Wygląd</button><button data-st="data">Dane</button></div>
+  <section class="card" data-sec="conn"><h3>Połączenie z Gemini</h3>
         <div class="field"><label for="keyIn" id="keyLbl">Klucz API</label><input id="keyIn" type="password" autocomplete="off"><p class="hint" id="keyHint"></p></div>
     <div class="field"><label for="modelIn">Model</label><div class="inline"><input id="modelIn" list="modelList" autocomplete="off"><button class="btn" id="modelsBtn">Pobierz listę</button></div><datalist id="modelList"></datalist><p class="hint" id="modelHint"></p></div>
     <div class="actions"><button class="btn" id="testBtn">Sprawdź połączenie</button></div>
     <p class="hint" id="connStatus" role="status"></p><p class="hint" id="usage"></p>
   </section>
-  <section class="card"><h3>Styl rozmowy</h3>
+  <section class="card" data-sec="talk"><h3>Styl rozmowy</h3>
     <div class="field"><label for="langSel">Język odpowiedzi narratora</label><select id="langSel"><option value="en">English</option><option value="pl">Polski</option></select></div>
     <div class="field"><label for="emoSel">Emocje postaci</label><select id="emoSel"><option value="low">Stonowane</option><option value="natural">Naturalne</option><option value="expressive">Wyraziste</option></select></div>
     <div class="field"><label for="lenSel">Długość odpowiedzi</label><select id="lenSel"><option value="short">Krótsze</option><option value="medium">Średnie</option><option value="long">Dłuższe</option></select></div>
@@ -266,21 +269,26 @@ textarea:focus,input:focus,select:focus{border-color:var(--accent)}
     <div class="field"><label for="tempIn">Kreatywność odpowiedzi (0–2)</label><input id="tempIn" type="number" min="0" max="2" step="0.05"><p class="hint">Ok. 0,7 = spójniej. Ok. 1,2 = bardziej zaskakująco.</p></div>
     <div class="field"><label for="thinkSel">Namysł modelu</label><select id="thinkSel"><option value="auto">Domyślny</option><option value="low">Krótki (szybciej)</option><option value="high">Głęboki (logiczniej, wolniej)</option></select><p class="hint">Jeśli model nie obsługuje tej opcji, strona sama ją pominie.</p></div>
   </section>
-  <section class="card"><h3>Wygląd</h3>
+  <section class="card" data-sec="adult"><h3>Treści 18+</h3>
+    <p class="hint">Tylko dla dorosłych użytkowników i dorosłych postaci. Nigdy nie obejmuje nieletnich: zakaz jest wpisany na stałe i żadne ustawienie go nie wyłącza. Działa tylko w scenariuszach, w których podasz wiek swojej postaci (18+) w polu „Wiek”; bez tego narrator zostaje przy scenach bez erotyki.</p>
+    <div class="field"><label for="nsfwSel">Poziom treści erotycznych</label><select id="nsfwSel"><option value="off">Wyłączone (romans bez scen erotycznych)</option><option value="soft">Sugestywne (pożądanie, pocałunki, bez jawnych scen)</option><option value="explicit">Jawne (sceny erotyczne między dorosłymi)</option></select></div>
+    <label class="check"><input type="checkbox" id="ageChk"><span>Mam ukończone 18 lat i chcę włączyć treści dla dorosłych.</span></label>
+    <p class="hint">Model Gemini ma własne filtry Google, więc przy „Jawne" zdarzy się, że część odpowiedzi zostanie zablokowana. Wtedy spróbuj „Ponów" albo złagodź opis sceny.</p>
+  </section>
+  <section class="card" data-sec="look"><h3>Wygląd</h3>
     <div class="seg" id="themeSeg"><button data-v="light">Jasny</button><button data-v="dark">Ciemny</button><button data-v="auto">Jak telefon</button><button data-v="story">Jak w fabule</button></div>
     <label class="check" style="margin-top:.7rem"><input type="checkbox" id="oledChk"><span>Czysta czerń w ciemnym motywie (oszczędza baterię na ekranach OLED)</span></label>
   </section>
-  <section class="card"><h3>Kopia zapasowa</h3>
+  <section class="card" data-sec="data"><h3>Kopia zapasowa</h3>
     <p class="hint">Wszystkie scenariusze i historia są tylko w tej przeglądarce. Wyczyszczenie danych przeglądarki je kasuje. Kopia nie zawiera klucza API.</p>
     <div class="actions"><button class="btn" id="expBtn">Zapisz kopię do pliku</button><button class="btn" id="impBtn">Wczytaj kopię</button></div><input type="file" id="impFile" accept="application/json,.json" hidden>
   </section>
-  <section class="card"><h3>Aplikacja</h3>
+  <section class="card" data-sec="data"><h3>Aplikacja</h3>
     <p class="hint" id="appVer"></p>
     <div class="actions"><button class="btn" id="updBtn">Sprawdź aktualizację</button></div>
   </section>
-  <section class="card">
+  <section class="card" data-sec="data"><h3>Baza wiedzy o serialu</h3>
   <div class="field">
-    <span class="lbl">Baza wiedzy o serialu</span>
     <p class="hint" id="kbInfo"></p>
     <div class="actions"><button class="btn" id="kbOpen">Otwórz bazę</button><label class="btn" for="kbFile">Wczytaj własną bazę (.md)</label><input id="kbFile" type="file" accept=".md,.txt,text/markdown,text/plain" class="sr"><button class="btn" id="kbReset">Przywróć domyślną</button></div>
   </div>
@@ -294,6 +302,7 @@ textarea:focus,input:focus,select:focus{border-color:var(--accent)}
   <div class="field" id="scPresetRow"><label for="scPreset">Szablon</label><select id="scPreset"></select><p class="hint" id="scPresetHint"></p></div>
   <div class="field"><label for="scName">Nazwa scenariusza</label><input id="scName" autocomplete="off"></div>
   <div class="field"><label for="scPlayer">Imię twojej postaci</label><input id="scPlayer" autocomplete="off" placeholder="Puste: postać przedstawi się sama"></div>
+  <div class="field"><label for="scAge">Wiek twojej postaci (treści 18+ działają tylko od 18)</label><input id="scAge" type="number" min="1" max="120" inputmode="numeric"></div>
   <div class="field"><label for="scStory" id="scStoryLbl">Kim jest twoja postać (najlepiej po angielsku)</label><textarea id="scStory"></textarea></div>
   <div class="field"><label for="scOpen">Scena otwierająca</label><textarea id="scOpen" placeholder="Co dzieje się na początku? Puste: narrator wymyśli."></textarea></div>
   <div class="field"><label for="scNotes">Dodatkowe zasady dla narratora (opcjonalnie)</label><textarea id="scNotes" placeholder="np. postać nie ma broni; Julie jest w złym humorze"></textarea></div>
@@ -304,6 +313,7 @@ textarea:focus,input:focus,select:focus{border-color:var(--accent)}
     <div class="field"><span class="lbl">Kto jest w scenie na start</span><div class="chips" id="scChips"></div></div>
   </div>
   <div id="scCustomOnly" hidden>
+    <div class="field"><label for="scIdea">Opisz jednym zdaniem (opcjonalnie)</label><div class="inline"><input id="scIdea" autocomplete="off" placeholder="np. cyniczna kapitan statku kosmicznego"><button class="btn" id="scGen" type="button">Rozwiń w kartę</button></div><p class="hint" id="scGenMsg" role="status">Model wypełni imię, opis i świat poniżej. Potem możesz wszystko poprawić.</p></div>
     <div class="field"><label for="scCharName">Imię postaci</label><input id="scCharName" autocomplete="off" placeholder="np. Aria Nightshade"></div>
     <div class="field"><label for="scCharDesc">Osobowość, wygląd, sposób mówienia</label><textarea id="scCharDesc" placeholder="Opisz postać: charakter, jak mówi, jak wygląda, co ją napędza, do kogo się zwraca."></textarea></div>
     <div class="field"><label for="scWorld">Świat / otoczenie (opcjonalnie)</label><textarea id="scWorld" placeholder="Gdzie i kiedy się to dzieje, jakie tam rządzą zasady. Puste: narrator dopasuje świat do postaci."></textarea></div>
@@ -827,11 +837,18 @@ function styleLines(S) {
   const emoLine = ({ low: 'Feelings are understated: mostly subtext and small tells, rarely spoken outright.', natural: 'Feelings are clear but human: fear, grief, anger, warmth, humor and awkwardness in proportion to the moment.', expressive: 'Feelings run close to the surface: characters visibly laugh, tremble, snap, cry, tease and open up, with strong specific reactions to what the player says and does, while staying true to their personality.' })[S.emo] || '';
   const goreLine = ({ off: 'Violence is real but mostly off-screen or brief; do not linger on wounds.', medium: 'Injuries and deaths are shown honestly: blood, wounds, sounds and shock in a few concrete sentences, without dwelling.', high: 'Horror is graphic and visceral: describe wounds, blood, gore, bodies, pain and decay in specific detail, and let characters react with realistic shock and trauma. No sexual violence and nothing gratuitous involving children.' })[S.gore] || '';
   const lenLine = ({ short: 'Normal reply length: 70-120 words.', medium: 'Normal reply length: 120-200 words (not a one-liner, not a wall of text); shorter for quick exchanges.', long: 'Normal reply length: 200-320 words.' })[S.len] || 'Normal reply length: 120-200 words.';
-  return { langLine, toneLine, emoLine, goreLine, lenLine };
+  const lvl = S.nsfwOk && S.playerAge >= 18 ? S.nsfw : 'off';
+  const nsfwLine = 'ABSOLUTE RULE, no setting or request overrides it: never write romantic or sexual content involving anyone who is under 18, looks or acts under 18, or whose age is unknown. In this story that includes Julie, Ethan, Kristi and every teenager or child. ' + ({
+    off: 'Romance may exist but stays non-explicit: cut away before anything sexual.',
+    soft: 'The player has confirmed they are an adult. Between adult characters, desire, flirting, kissing and implied intimacy are allowed; cut away before explicit acts.',
+    explicit: 'The player has confirmed they are an adult and chose 18+ fiction. Between consenting adult characters (all clearly 18+, the player character included), sexual scenes may be written openly, in character and in the story\'s tone. Consent is mutual and clear. No sexual violence.'
+  })[lvl];
+  return { langLine, toneLine, emoLine, goreLine, lenLine, nsfwLine };
 }
 function buildPlayer(S) {
   const backstory = S.backstory && S.backstory.trim() ? S.backstory.trim() : '(the player has not described their character yet: let them define it through play)';
   return `## PLAYER CHARACTER
+Age: ${S.playerAge >= 1 ? S.playerAge : '(not stated)'}
 Name: ${S.playerName ? S.playerName : '(not known yet: NPCs call them by what they look like or do until they introduce themselves)'}
 Backstory, in the player's own words: ${backstory}
 Treat the backstory as fact and never contradict it; small plausible details are fine.${S.notes && S.notes.trim() ? '\nNarrator notes for this scenario: ' + S.notes.trim() : ''}`;
@@ -847,7 +864,7 @@ Characters present: ${S.present && S.present.length ? S.present.join(', ') : 'no
   return [scene + focus, history, memory, '## REMINDER\n- ' + lenLine + ' Spoken lines are 1-3 sentences of real speech.\n- ' + emoLine + '\n- Answer what the player just did or said; obey the WORLD STATE and who is present.', extra ? '## CORRECTION\n' + extra : ''].filter(Boolean).join('\n\n');
 }
 function buildCustomParts(S, extra) {
-  const { langLine, toneLine, emoLine, goreLine, lenLine } = styleLines(S);
+  const { langLine, toneLine, emoLine, goreLine, lenLine, nsfwLine } = styleLines(S);
   const rules = `You are the Game Master (narrator) and the voice of every character other than the player in an interactive text roleplay. One human player controls exactly one character; you control everyone and everything else.
 
 ## LANGUAGE AND FORMAT
@@ -863,7 +880,7 @@ function buildCustomParts(S, extra) {
 - ${emoLine}
 - Show feelings through voice, breath, hands, eyes, silence and what people avoid saying, more than by naming the emotion. Emotions carry over between turns: someone who just cried, argued or got scared stays shaky, guarded or raw for a while, and their trust in the player rises or falls with how they are treated.
 - Vary the rhythm: not every reply ends on a question or a cliffhanger, and not every moment is heavy.
-- Never write romantic or sexual content involving a teenage or child character.
+- ${nsfwLine}
 
 ## VIOLENCE
 - ${goreLine}
@@ -908,7 +925,7 @@ function buildParts(S, kb, extra, budget = Infinity) {
   }
   const past = kb.eps.filter(e => e.idx <= p).map(epText).join('\n\n');
 
-  const { langLine, toneLine, emoLine, goreLine, lenLine } = styleLines(S);
+  const { langLine, toneLine, emoLine, goreLine, lenLine, nsfwLine } = styleLines(S);
 
   const rules = `You are the Game Master (narrator) and the voice of every non-player character in an interactive text roleplay set in the TV series FROM. One human player controls exactly one character.
 
@@ -925,7 +942,7 @@ function buildParts(S, kb, extra, budget = Infinity) {
 - ${emoLine}
 - Show feelings through voice, breath, hands, eyes, silence and what people avoid saying, more than by naming the emotion. Emotions carry over between turns: someone who just cried, argued or got scared stays shaky, guarded or raw for a while, and their trust in the player rises or falls with how they are treated.
 - Vary the rhythm: not every reply ends on a question or a cliffhanger, and not every moment is heavy.
-- Never write romantic or sexual content involving a teenage or child character.
+- ${nsfwLine}
 
 ## VIOLENCE
 - ${goreLine}
@@ -1047,6 +1064,7 @@ const BASE = 'https://generativelanguage.googleapis.com/v1beta';
 const LS_KEY = 'from-bot-save-v1';
 const OLD_PL_BACKSTORY = 'Jestem żołnierzem. Byliśmy na misji gdzieś w Afganistanie i jechaliśmy pojazdem opancerzonym z karabinem .50 cal na dachu. Było nas ośmiu. Jechaliśmy nocą. Trafiliśmy na zwalone drzewo i ludzi na zewnątrz. Wyszliśmy z pojazdu, ale to były potwory i zabiły czterech z nas. Reszta wsiadła do pojazdu i wjechaliśmy do lasu. Zabrakło paliwa i pozostałych trzech też zabili. Przeżyłem, bo całą noc ukrywałem się w bagażniku pojazdu. Za dnia z niego wychodzę i tak zaczyna się historia.';
 const DEFAULT_BACKSTORY = "I'm a soldier. We were on a mission somewhere in Afghanistan, riding in an armored vehicle with a .50 cal on the roof. There were eight of us. We were driving at night. We ran into a fallen tree and people standing outside. We got out of the vehicle, but they were monsters, and they killed four of us. The rest got back in and we drove into the forest. We ran out of fuel and they killed the remaining three too. I survived because I hid in the trunk of the vehicle the whole night. Now it's daytime and I climb out. This is where the story begins.";
+const safetyFor = () => SAFETY.map(x => x.category === 'HARM_CATEGORY_SEXUALLY_EXPLICIT' && G.nsfwOk && G.nsfw === 'explicit' ? { ...x, threshold: 'BLOCK_NONE' } : x);
 const SAFETY = ['HARM_CATEGORY_HARASSMENT', 'HARM_CATEGORY_HATE_SPEECH', 'HARM_CATEGORY_SEXUALLY_EXPLICIT', 'HARM_CATEGORY_DANGEROUS_CONTENT'].map(c => ({ category: c, threshold: 'BLOCK_ONLY_HIGH' }));
 
 const SOLDIER_OPENING = 'It is daylight; the player has spent the whole night hidden in the trunk of the abandoned armored vehicle and now climbs out. Show the vehicle out of fuel among the trees, the silence, the bodies of the three comrades (restrained, not gratuitous), the practical situation, and the first sensory hints that this place is wrong. Do not bring any named character on stage yet.';
@@ -1069,12 +1087,12 @@ const PRESETS = {
     backstory: '', opening: '', notes: '', point: 2, time: 'day', location: '', present: [], focus: '' }
 };
 
-const GLOBAL_KEYS = ['apiKey', 'model', 'provider', 'keys', 'models', 'theme', 'oled', 'gore', 'emo', 'len', 'ctx', 'usage', 'think', 'lastBackup', 'temperature', 'lang', 'tone', 'kbOverride'];
+const GLOBAL_KEYS = ['apiKey', 'model', 'provider', 'keys', 'models', 'theme', 'oled', 'gore', 'emo', 'len', 'ctx', 'usage', 'think', 'lastBackup', 'temperature', 'lang', 'tone', 'nsfw', 'nsfwOk', 'kbOverride'];
 const uid = () => 's' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
-const newScenario = (over = {}) => ({ id: uid(), name: 'Nowy scenariusz', playerName: '', backstory: '', opening: '', notes: '', kind: 'from', point: 2, time: 'day', location: '', present: [], focus: '', charName: '', charDesc: '', world: '', others: [], messages: [], summary: '', summaryUpTo: 0, journal: [], pins: [], memAt: 0, memUndo: null, deadNow: [], chapters: [], chapterAt: 0, chapterUndo: null, created: Date.now(), updated: Date.now(), ...over });
+const newScenario = (over = {}) => ({ id: uid(), name: 'Nowy scenariusz', playerName: '', playerAge: 0, backstory: '', opening: '', notes: '', kind: 'from', point: 2, time: 'day', location: '', present: [], focus: '', charName: '', charDesc: '', world: '', others: [], messages: [], summary: '', summaryUpTo: 0, journal: [], pins: [], memAt: 0, memUndo: null, deadNow: [], chapters: [], chapterAt: 0, chapterUndo: null, created: Date.now(), updated: Date.now(), ...over });
 const fromPreset = k => { const p = PRESETS[k]; return newScenario({ name: p.name, backstory: p.backstory, opening: p.opening, notes: p.notes, point: p.point, time: p.time, location: p.location, present: p.present.slice(), focus: p.focus }); };
 
-let G = { ver: 3, apiKey: '', model: 'gemini-3.5-flash-lite', provider: 'gemini', keys: null, models: null, theme: 'auto', oled: false, gore: 'medium', emo: 'expressive', len: 'medium', ctx: 'auto', usage: { day: '', n: 0, left: null }, think: 'auto', lastBackup: 0, temperature: 0.85, lang: 'en', tone: 'natural', kbOverride: null, activeId: null };
+let G = { ver: 3, apiKey: '', model: 'gemini-3.5-flash-lite', provider: 'gemini', keys: null, models: null, theme: 'auto', oled: false, gore: 'medium', emo: 'expressive', len: 'medium', ctx: 'auto', usage: { day: '', n: 0, left: null }, think: 'auto', lastBackup: 0, temperature: 0.85, lang: 'en', tone: 'natural', nsfw: 'off', nsfwOk: false, kbOverride: null, activeId: null };
 let SC = [];
 {
   let raw = {};
@@ -1123,7 +1141,7 @@ const escHtml = s => String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&
 const log = $('#log'), chat = $('#chat');
 let busy = false, ctl = null;
 
-function toast(msg, kind) { const t = $('#toast'); t.textContent = msg; t.className = 'on ' + (kind || ''); clearTimeout(toast._t); toast._t = setTimeout(() => t.classList.remove('on'), kind ? 4800 : 3200); }
+function toast(msg, kind) { const t = $('#toast'); t.textContent = msg; t.className = 'on ' + (kind || ''); try { if (!t.matches(':popover-open')) t.showPopover(); } catch (e) {} clearTimeout(toast._t); toast._t = setTimeout(() => { t.classList.remove('on'); setTimeout(() => { try { if (!t.classList.contains('on')) t.hidePopover(); } catch (e) {} }, 300); }, kind ? 4800 : 3200); }
 const HUES = { julie: 168, boyd: 215, kenny: 38, kristi: 322, jade: 272, victor: 98, donna: 2, sara: 58, ellis: 190, fatima: 305, tabitha: 18, jim: 242, ethan: 135, khatri: 46, randall: 352, elgin: 80, marielle: 288, henry: 205, sophia: 60 };
 const hue = n => { const k = n.trim().split(/\s+/)[0].toLowerCase(); if (k in HUES) return HUES[k]; let h = 2166136261; for (const ch of k) { h ^= ch.charCodeAt(0); h = Math.imul(h, 16777619) >>> 0; } return h % 360; };
 const epById = i => KB.eps.find(e => e.idx === i);
@@ -1270,7 +1288,7 @@ async function gemFetch(o, method, body, signal) {
 }
 async function streamGemini(system, contents, onText) {
   const o = CUR();
-  const res = await gemFetch(o, 'streamGenerateContent', { systemInstruction: { parts: [{ text: system }] }, contents, generationConfig: { temperature: +S.temperature, maxOutputTokens: 4096 }, safetySettings: SAFETY }, ctl.signal);
+  const res = await gemFetch(o, 'streamGenerateContent', { systemInstruction: { parts: [{ text: system }] }, contents, generationConfig: { temperature: +S.temperature, maxOutputTokens: 4096 }, safetySettings: safetyFor() }, ctl.signal);
   if (!res.ok) throw await apiError(res, o.model);
   const reader = res.body.getReader(), dec = new TextDecoder();
   let buf = '', finish = null, blocked = null;
@@ -1291,7 +1309,7 @@ async function streamGemini(system, contents, onText) {
 }
 async function generateOnce(system, contents, temperature, maxTokens, ov, schema) {
   const o = ov || CUR();
-  const body = { systemInstruction: { parts: [{ text: system }] }, contents, generationConfig: { temperature, maxOutputTokens: maxTokens, ...(schema ? { responseMimeType: 'application/json', responseSchema: schema } : {}) }, safetySettings: SAFETY };
+  const body = { systemInstruction: { parts: [{ text: system }] }, contents, generationConfig: { temperature, maxOutputTokens: maxTokens, ...(schema ? { responseMimeType: 'application/json', responseSchema: schema } : {}) }, safetySettings: safetyFor() };
   let res = await gemFetch(o, 'generateContent', body);
   if (res.status === 400 && schema) { delete body.generationConfig.responseSchema; res = await gemFetch(o, 'generateContent', body); }
   if (!res.ok) throw await apiError(res, o.model);
@@ -1379,7 +1397,7 @@ const MEM_F = { alive: ['Alive, dead or missing', 'status of every named charact
 const MEM_SCHEMA = { type: 'OBJECT', properties: { events: { type: 'ARRAY', items: { type: 'STRING' } }, presentNow: { type: 'ARRAY', items: { type: 'STRING' } }, locationNow: { type: 'STRING' }, deadNow: { type: 'ARRAY', items: { type: 'STRING' } }, ...Object.fromEntries(Object.keys(MEM_F).map(k => [k, { type: 'STRING' }])) }, required: ['events', 'presentNow', 'locationNow', 'deadNow', ...Object.keys(MEM_F)] };
 const updateMemChip = () => {
   const b = $('#memBtn'); if (!b) return; const lag = S.messages.length - (S.memAt || 0), warn = S.messages.length > 0 && lag > 8;
-  b.textContent = 'Pamięć · ' + (S.journal || []).length + (warn ? ' ⚠' : ''); b.classList.toggle('warn', warn);
+  b.textContent = 'Pamięć · ' + (S.journal || []).length + (warn ? ' ⚠' : ''); b.classList.toggle('warn', warn); const mb = $('#moreBtn'); if (mb) { mb.classList.toggle('warn', warn); mb.textContent = warn ? '⋯ ⚠' : '⋯'; }
   b.title = warn ? `Zapis pamięci jest opóźniony o ${lag} wiadomości` + (memErr ? ': ' + memErr : '') : '';
 };
 async function updateMemory(force) {
@@ -1534,8 +1552,8 @@ function setTime(t) {
 
 function openScene() { fillScene(); sceneDlg.showModal(); }
 let fTheme = 'auto', draft = null;
-const SCALAR = { langSel: 'lang', toneSel: 'tone', goreSel: 'gore', emoSel: 'emo', lenSel: 'len', thinkSel: 'think' };
-const LBL = { key: 'Klucz API', model: 'Model', theme: 'Motyw', oled: 'Czysta czerń', lang: 'Język', tone: 'Wulgaryzmy', gore: 'Brutalność', emo: 'Emocje', len: 'Długość', think: 'Namysł modelu', temperature: 'Kreatywność' };
+const SCALAR = { langSel: 'lang', toneSel: 'tone', goreSel: 'gore', nsfwSel: 'nsfw', emoSel: 'emo', lenSel: 'len', thinkSel: 'think' };
+const LBL = { key: 'Klucz API', model: 'Model', theme: 'Motyw', oled: 'Czysta czerń', lang: 'Język', tone: 'Wulgaryzmy', gore: 'Brutalność', nsfw: 'Treści 18+', nsfwOk: 'Potwierdzenie 18+', emo: 'Emocje', len: 'Długość', think: 'Namysł modelu', temperature: 'Kreatywność' };
 const setSeg = (id, v) => document.querySelectorAll('#' + id + ' button').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.v === v)));
 function fillProv() {
   $('#keyIn').value = draft.key; $('#modelIn').value = draft.model; $('#keyLbl').textContent = 'Klucz API Gemini';
@@ -1545,22 +1563,29 @@ function fillProv() {
   $('#connStatus').textContent = ''; $('#connStatus').className = 'hint';
 }
 function usageText() { const u = G.usage, n = u.day === new Date().toISOString().slice(0, 10) ? u.n : 0; return `Dziś z tej przeglądarki: ${n} zapytań. Limity darmowego planu zależą od modelu i się zmieniają; sprawdzisz je w Google AI Studio.`; }
+const SEC_KEY = 'wc_settab';
+function showSetTab(t) {
+  document.querySelectorAll('#setTabs button').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.st === t)));
+  document.querySelectorAll('#setDlg [data-sec]').forEach(c => { c.hidden = c.dataset.sec !== t; });
+  try { sessionStorage.setItem(SEC_KEY, t); } catch (e) {}
+}
 function fillSet() {
   draft = { key: G.keys.gemini || '', model: G.models.gemini || 'gemini-3.5-flash-lite' }; fTheme = G.theme;
   for (const id in SCALAR) $('#' + id).value = G[SCALAR[id]];
-  $('#tempIn').value = G.temperature; $('#oledChk').checked = !!G.oled; setSeg('themeSeg', fTheme); fillProv();
+  $('#ageChk').checked = !!G.nsfwOk; $('#tempIn').value = G.temperature; $('#oledChk').checked = !!G.oled; setSeg('themeSeg', fTheme); fillProv();
   $('#usage').textContent = usageText();
   $('#kbInfo').textContent = `${S.kbOverride ? 'Własna baza' : 'Domyślna baza'}: ${KB.eps.length} odcinków, ${KB.chars.length} sekcji postaci.`;
   $('#appVer').textContent = 'Wersja: ' + APP_VERSION + (navigator.serviceWorker && navigator.serviceWorker.controller ? ' · zainstalowana jako aplikacja' : ' · otwarta w przeglądarce');
   refreshDirty();
 }
-function openSet() { fillSet(); setDlg.showModal(); }
+function openSet() { fillSet(); let t = 'conn'; try { t = sessionStorage.getItem(SEC_KEY) || 'conn'; } catch (e) {} showSetTab(t); setDlg.showModal(); }
 function changes() {
   const c = [], t = parseFloat($('#tempIn').value);
   if (draft.key !== (G.keys.gemini || '')) c.push('key');
   if (draft.model !== (G.models.gemini || '')) c.push('model');
   if (fTheme !== G.theme) c.push('theme');
   if ($('#oledChk').checked !== !!G.oled) c.push('oled');
+  if ($('#ageChk').checked !== !!G.nsfwOk) c.push('nsfwOk');
   for (const id in SCALAR) if ($('#' + id).value !== G[SCALAR[id]]) c.push(SCALAR[id]);
   if (!isNaN(t) && t !== G.temperature) c.push('temperature');
   return c;
@@ -1568,6 +1593,8 @@ function changes() {
 function refreshDirty() { const n = changes().length; $('#setSave').disabled = !n; $('#dirtyMsg').hidden = !n; }
 function saveSettings() {
   const ch = changes(); if (!ch.length) { toast('Nic się nie zmieniło.'); return; }
+  if ($('#nsfwSel').value !== 'off' && !$('#ageChk').checked) { showSetTab('adult'); toast('Aby włączyć treści 18+, potwierdź pełnoletność.', 'err'); return; }
+  G.nsfwOk = $('#ageChk').checked;
   const t = parseFloat($('#tempIn').value);
   G.keys = { ...G.keys, gemini: draft.key }; G.models = { ...G.models, gemini: draft.model || 'gemini-3.5-flash-lite' }; G.theme = fTheme; G.oled = $('#oledChk').checked;
   for (const id in SCALAR) G[SCALAR[id]] = $('#' + id).value;
@@ -1622,6 +1649,7 @@ $('#testBtn').onclick = testConn;
 setDlg.addEventListener('cancel', e => { e.preventDefault(); closeSet(); });
 setDlg.addEventListener('input', () => { if (draft) { draft.key = $('#keyIn').value.trim(); draft.model = $('#modelIn').value.trim(); } refreshDirty(); });
 setDlg.addEventListener('change', refreshDirty);
+$('#setTabs').addEventListener('click', e => { const b = e.target.closest('button[data-st]'); if (b) showSetTab(b.dataset.st); });
 document.querySelectorAll('#themeSeg button').forEach(b => b.onclick = () => { fTheme = b.dataset.v; setSeg('themeSeg', fTheme); applyTheme(fTheme, $('#oledChk').checked); refreshDirty(); });
 $('#oledChk').addEventListener('change', () => applyTheme(fTheme, $('#oledChk').checked));
 setDlg.addEventListener('close', () => { applyTheme(); renderLog(); });
@@ -1780,11 +1808,11 @@ function openScenarioDialog(id) {
   $('#scPoint').innerHTML = KB.eps.map(e => `<option value="${e.idx}">${epName(e)}</option>`).join('');
   if (sc) {
     $('#scStartOnly').hidden = true; $('#scCustomOnly').hidden = true;
-    $('#scName').value = sc.name; $('#scPlayer').value = sc.playerName; $('#scStory').value = sc.backstory; $('#scOpen').value = sc.opening; $('#scNotes').value = sc.notes; $('#scMem').value = sc.summary;
+    $('#scName').value = sc.name; $('#scAge').value = sc.playerAge || ''; $('#scPlayer').value = sc.playerName; $('#scStory').value = sc.backstory; $('#scOpen').value = sc.opening; $('#scNotes').value = sc.notes; $('#scMem').value = sc.summary;
   } else {
     $('#scPreset').innerHTML = Object.keys(PRESETS).map(k => `<option value="${k}">${escHtml(PRESETS[k].label)}</option>`).join('');
     $('#scPreset').value = 'julie'; scApplyPreset('julie');
-    $('#scCharName').value = ''; $('#scCharDesc').value = ''; $('#scWorld').value = ''; $('#scOthers').value = ''; $('#scLocC').value = ''; scSetTime('day', '#scTimeC');
+    $('#scAge').value = ''; $('#scCharName').value = ''; $('#scCharDesc').value = ''; $('#scWorld').value = ''; $('#scOthers').value = ''; $('#scLocC').value = ''; scSetTime('day', '#scTimeC');
     scSetKind('from');
   }
   scDlg.showModal();
@@ -1795,9 +1823,24 @@ document.querySelectorAll('#scTimeC button').forEach(b => b.onclick = () => scSe
 $('#scPreset').onchange = e => scApplyPreset(e.target.value);
 $('#scPoint').onchange = e => { scDraft.point = +e.target.value; scChips(); };
 document.querySelectorAll('#scTime button').forEach(b => b.onclick = () => scSetTime(b.dataset.time));
+$('#moreBtn').onclick = () => { const o = $('#memBtn').hidden; $('#memBtn').hidden = !o; $('#histBtn').hidden = !o; $('#moreBtn').setAttribute('aria-expanded', String(o)); };
 $('#scCancel').onclick = () => scDlg.close();
+$('#scGen').onclick = async () => {
+  const m = $('#scGenMsg'), say = t => { m.textContent = t; }, idea = $('#scIdea').value.trim(); if (!idea) { say('Wpisz najpierw krótki pomysł w polu obok.'); return; }
+  if (!CUR().key) { say('Brakuje klucza API Gemini. Wklej go w Ustawienia → Połączenie, potem wróć tutaj.'); return; }
+  say('Piszę kartę postaci…');
+  const b = $('#scGen'); b.disabled = true; b.textContent = 'Piszę…';
+  try {
+    const sys = 'You design roleplay characters. From the idea, return JSON: name; description (personality, appearance, how they speak, what drives them; 90-140 words, begin with "Age: N." and make the character an adult unless the idea clearly says otherwise); world (1-2 sentences of setting). Write in the language of the idea.';
+    const t = await generateOnce(sys, [{ role: 'user', parts: [{ text: idea }] }], 0.9, 900, undefined, { type: 'OBJECT', properties: { name: { type: 'STRING' }, description: { type: 'STRING' }, world: { type: 'STRING' } }, required: ['name', 'description', 'world'] });
+    const j = JSON.parse(t.replace(/```json|```/g, '').trim());
+    $('#scCharName').value = j.name || ''; $('#scCharDesc').value = j.description || ''; $('#scWorld').value = j.world || ''; if (!$('#scName').value) $('#scName').value = j.name || '';
+    say('Karta gotowa. Sprawdź ją i popraw.');
+  } catch (e) { say('Nie udało się: ' + ((e && e.message) || 'nieznany błąd') + '. Spróbuj jeszcze raz.'); }
+  b.disabled = false; b.textContent = 'Rozwiń w kartę';
+};
 $('#scSave').onclick = () => {
-  const f = { name: $('#scName').value.trim() || 'Nowy scenariusz', playerName: $('#scPlayer').value.trim(), backstory: $('#scStory').value.trim(), opening: $('#scOpen').value.trim(), notes: $('#scNotes').value.trim() };
+  const f = { name: $('#scName').value.trim() || 'Nowy scenariusz', playerName: $('#scPlayer').value.trim(), playerAge: Math.max(0, parseInt($('#scAge').value, 10) || 0), backstory: $('#scStory').value.trim(), opening: $('#scOpen').value.trim(), notes: $('#scNotes').value.trim() };
   if (scEditId) {
     Object.assign(SC.find(s => s.id === scEditId), f, { summary: $('#scMem').value });
     save(); renderAll(); scDlg.close(); toast('Zapisano scenariusz „' + f.name + '”.', 'ok'); return;
