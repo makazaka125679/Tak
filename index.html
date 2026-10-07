@@ -169,9 +169,37 @@ textarea:focus,input:focus,select:focus{border-color:var(--accent)}
 .acts{display:flex;gap:.4rem;flex-wrap:wrap;margin:.25rem 0 .6rem}.you+.acts{justify-content:flex-end}
 .acts .btn{min-height:2.1rem;padding:.3rem .8rem;font-size:.9rem}
 #memBtn.warn,#moreBtn.warn{border-color:var(--danger,#b3261e);color:var(--danger,#b3261e)}
+
+/* ekran startowy i płynność */
+#splash{position:fixed;inset:0;z-index:9999;display:grid;place-items:center;background:var(--bg);color:var(--ink);transition:opacity .5s ease,visibility .5s}
+#splash.off{opacity:0;visibility:hidden;pointer-events:none}
+#splash .in{text-align:center;padding:1rem}
+#splash b{display:block;font:600 2.1rem/1.1 var(--serif);letter-spacing:.05em;animation:sp-in .8s ease both}
+#splash small{display:block;margin-top:.6rem;color:var(--muted);font:.85rem var(--sans);animation:sp-in .8s .25s ease both}
+#splash .bar{width:9rem;height:3px;margin:1.4rem auto 0;background:var(--line);border-radius:3px;overflow:hidden}
+#splash .bar i{display:block;height:100%;width:40%;background:var(--accent);border-radius:3px;animation:sp-bar 1.1s ease-in-out infinite}
+@keyframes sp-in{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+@keyframes sp-bar{from{transform:translateX(-100%)}to{transform:translateX(250%)}}
+@keyframes dlg-up{from{opacity:0;transform:translateY(22px)}to{opacity:1;transform:none}}
+@keyframes dlg-fade{from{opacity:0}to{opacity:1}}
+html{-webkit-tap-highlight-color:transparent}
+dialog{overscroll-behavior:contain}
+dialog[open]{animation:dlg-up .28s cubic-bezier(.2,.8,.2,1)}
+dialog[open]::backdrop{animation:dlg-fade .25s ease}
+.btn,.icon,.seg button,.sc-item{transition:background-color .15s,border-color .15s,color .15s,transform .1s}
+.btn:active,.icon:active,.seg button:active{transform:scale(.96)}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+@media (prefers-reduced-motion:reduce){#splash,#splash *,dialog[open],dialog[open]::backdrop{animation:none!important;transition:none!important}}
+#editDlg .sheet{border-top:4px solid var(--player)}
+#editDlg[data-role=model] .sheet{border-top-color:var(--accent)}
+#editTxt{width:100%;min-height:42dvh;max-height:none;font:1.02rem/1.6 var(--serif);padding:.8rem .9rem}
+#editCnt{text-align:right;margin:.3rem 0 0}
+.you{cursor:pointer}
 </style>
 </head>
 <body>
+<div id="splash" aria-hidden="true"><div class="in"><b>Wcielenia</b><small>Wczytuję opowieści…</small><div class="bar"><i></i></div></div></div>
+<script>setTimeout(function(){var e=document.getElementById('splash');if(e)e.classList.add('off')},4000)</script>
 <noscript>Ta aplikacja wymaga włączonego JavaScriptu.</noscript>
 
 <header>
@@ -339,6 +367,13 @@ textarea:focus,input:focus,select:focus{border-color:var(--accent)}
     <button class="btn" id="kbEdit">Edytuj</button><button class="btn primary" id="kbSave" hidden>Zapisz</button><button class="btn" id="kbCancel" hidden>Anuluj</button>
     <button class="btn" id="kbDl">Pobierz .md</button><button class="btn" id="kbClose">Zamknij</button>
   </div>
+</div></dialog>
+
+<dialog id="editDlg" aria-labelledby="editTitle"><div class="sheet">
+  <h2 id="editTitle">Edycja</h2>
+  <p class="hint" id="editHint"></p>
+  <div class="field"><textarea id="editTxt" aria-labelledby="editTitle" spellcheck="true"></textarea><p class="hint" id="editCnt"></p></div>
+  <div class="actions"><button class="btn primary" id="editSave">Zapisz</button><button class="btn" id="editRedo" hidden>Zapisz i ponów odpowiedź</button><button class="btn" id="editCancel">Anuluj</button></div>
 </div></dialog>
 
 <dialog id="memDlg" aria-labelledby="memTitle"><div class="sheet">
@@ -1196,6 +1231,7 @@ function renderLog() {
     const d = document.createElement('div');
     if (m.role === 'user') { d.className = 'you'; d.innerHTML = renderInline(m.text); } else d.innerHTML = messageHTML(m.text);
     d.onclick = e => { if (e.target.closest('a,button')) return; const nx = d.nextElementSibling, had = nx && nx.classList.contains('acts'); document.querySelectorAll('.acts').forEach(x => x.remove()); if (!had) d.after(msgActs(m, i)); };
+    if (m.role === 'user') d.ondblclick = () => openEdit(m, i);
     log.appendChild(d);
     if (m.role === 'model' && i === S.messages.length - 1 && m.alts && m.alts.length > 1) log.appendChild(altNav(m));
   });
@@ -1213,17 +1249,36 @@ function altNav(m) {
   r.append(prev, idx, next);
   return r;
 }
+let editM = null, editIdx = -1;
+function openEdit(m, i) {
+  if (busy) return;
+  const mine = m.role === 'user'; editM = m; editIdx = i;
+  $('#editDlg').dataset.role = mine ? 'user' : 'model';
+  $('#editTitle').textContent = mine ? 'Twoja wiadomość' : 'Odpowiedź narratora';
+  $('#editHint').textContent = mine ? 'Poprawka zmieni tekst w historii. Narrator zobaczy nową wersję przy kolejnej odpowiedzi.' : 'Popraw styl albo fakty. Zmiana zostaje w tej wersji odpowiedzi.';
+  $('#editTxt').value = m.text; editCount();
+  $('#editRedo').hidden = !(mine && S.messages.slice(i + 1).every(x => x.role !== 'user'));
+  $('#editDlg').showModal(); $('#editTxt').focus();
+}
+function editCount() { const t = $('#editTxt').value; $('#editCnt').textContent = t.trim().split(/\s+/).filter(Boolean).length + ' słów · ' + t.length + ' znaków'; }
+function editCommit() {
+  const t = $('#editTxt').value.trim();
+  if (!t) { toast('Tekst nie może być pusty.', 'err'); return false; }
+  editM.text = t; if (editM.role === 'model' && editM.alts && editM.altIdx != null) editM.alts[editM.altIdx] = t;
+  save(); renderLog(); $('#editDlg').close(); return true;
+}
+$('#editTxt').addEventListener('input', editCount);
+$('#editCancel').onclick = () => $('#editDlg').close();
+$('#editSave').onclick = () => { if (editCommit()) toast('Zapisano zmiany.', 'ok'); };
+$('#editRedo').onclick = () => { const i = editIdx; if (editCommit()) { S.messages.splice(i + 1); save(); redo(); } };
 function msgActs(m, i) {
   const r = document.createElement('div'); r.className = 'acts';
   const add = (t, f) => { const b = document.createElement('button'); b.className = 'btn ghost'; b.textContent = t; b.onclick = e => { e.stopPropagation(); f(); }; r.appendChild(b); };
   add('Kopiuj', () => navigator.clipboard.writeText(m.text).then(() => toast('Skopiowano.', 'ok'), () => toast('Nie udało się skopiować.', 'err')));
   if (busy) return r;
-  if (m.role === 'user') add('Edytuj', () => { const t = prompt('Popraw wiadomość:', m.text); if (t != null && t.trim()) { m.text = t.trim(); save(); renderLog(); toast('Wiadomość poprawiona.', 'ok'); } });
+  if (m.role === 'user') add('Edytuj', () => openEdit(m, i));
   else {
-    add('Edytuj', () => {
-      const t = prompt('Popraw odpowiedź:', m.text);
-      if (t != null && t.trim()) { m.text = t.trim(); if (m.alts && m.altIdx != null) m.alts[m.altIdx] = m.text; save(); renderLog(); toast('Odpowiedź poprawiona.', 'ok'); }
-    });
+    add('Edytuj', () => openEdit(m, i));
     add('To błędne', () => { const t = prompt('Co jest nie tak i jak jest naprawdę? To trafi do przypiętych faktów.'); if (t && t.trim()) { S.pins = [...(S.pins || []), t.trim()]; save(); toast('Dodano do przypiętych faktów. Model użyje tego od następnej odpowiedzi.', 'ok'); } });
   }
   add('Usuń', () => { if (!confirm('Usunąć tę wiadomość?')) return; S.messages.splice(i, 1); if (i < (S.memAt || 0)) S.memAt--; if (i < S.summaryUpTo) S.summaryUpTo--; if (i < (S.chapterAt || 0)) S.chapterAt--; S.chapters = (S.chapters || []).filter(c => c.at <= S.messages.length); save(); renderLog(); toast('Wiadomość usunięta.', 'ok'); });
@@ -1968,6 +2023,7 @@ async function checkForUpdate() {
 
 /* ================= INIT ================= */
 syncSide(); renderAll();
+{ const sp = document.getElementById('splash'); if (sp) setTimeout(() => { sp.classList.add('off'); setTimeout(() => sp.remove(), 600); }, 700); }
 })();
 </script>
 </body>
