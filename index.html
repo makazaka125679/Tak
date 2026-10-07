@@ -344,15 +344,13 @@ dialog[open]::backdrop{animation:dlg-fade .25s ease}
     <div class="field"><span class="lbl">Kto jest w scenie na start</span><div class="chips" id="scChips"></div></div>
   </div>
   <div id="scCustomOnly" hidden>
-    <div class="field" id="scIdeaRow"><label for="scIdea">Opisz jednym zdaniem (opcjonalnie)</label><div class="inline"><input id="scIdea" autocomplete="off" placeholder="np. cyniczna kapitan statku kosmicznego"><button class="btn" id="scGen" type="button">Rozwiń w kartę</button></div><p class="hint" id="scGenMsg" role="status">Model wypełni imię, opis i świat poniżej. Potem możesz wszystko poprawić.</p></div>
+    <div class="field"><label for="scIdea">Opisz jednym zdaniem (opcjonalnie)</label><div class="inline"><input id="scIdea" autocomplete="off" placeholder="np. cyniczna kapitan statku kosmicznego"><button class="btn" id="scGen" type="button">Rozwiń w kartę</button></div><p class="hint" id="scGenMsg" role="status">Model wypełni imię, opis i świat poniżej. Potem możesz wszystko poprawić.</p></div>
     <div class="field"><label for="scCharName">Imię postaci</label><input id="scCharName" autocomplete="off" placeholder="np. Aria Nightshade"></div>
     <div class="field"><label for="scCharDesc">Osobowość, wygląd, sposób mówienia</label><textarea id="scCharDesc" placeholder="Opisz postać: charakter, jak mówi, jak wygląda, co ją napędza, do kogo się zwraca."></textarea></div>
-    <div class="field"><label for="scCharAge">Wiek postaci (sceny erotyczne tylko dla 18+)</label><input id="scCharAge" type="number" min="1" max="120" inputmode="numeric"></div>
-    <div class="field" id="scBodyRow"><label for="scCharBody">Opis ciała na sceny 18+ (opcjonalnie)</label><textarea id="scCharBody" placeholder="Sylwetka, biust, biodra, skóra, bielizna… Tylko dorosła postać. Narrator użyje tego w scenach erotycznych."></textarea><p class="hint" id="scBodyHint"></p></div>
     <div class="field"><label for="scWorld">Świat / otoczenie (opcjonalnie)</label><textarea id="scWorld" placeholder="Gdzie i kiedy się to dzieje, jakie tam rządzą zasady. Puste: narrator dopasuje świat do postaci."></textarea></div>
     <div class="field"><label for="scOthers">Kto jeszcze bywa w scenie (opcjonalnie, po przecinku)</label><input id="scOthers" autocomplete="off" placeholder="np. Kapitan Reyes, Mruczek kot"></div>
-    <div class="field" id="scLocRowC"><label for="scLocC">Miejsce na start</label><input id="scLocC" autocomplete="off"></div>
-    <div class="field" id="scTimeRowC"><span class="lbl">Pora dnia</span><div class="seg" id="scTimeC"><button data-time="day">Dzień</button><button data-time="night">Noc</button></div></div>
+    <div class="field"><label for="scLocC">Miejsce na start</label><input id="scLocC" autocomplete="off"></div>
+    <div class="field"><span class="lbl">Pora dnia</span><div class="seg" id="scTimeC"><button data-time="day">Dzień</button><button data-time="night">Noc</button></div></div>
   </div>
   <div class="field" id="scMemRow"><label for="scMem">Pamięć opowieści (narrator uzupełnia ją sam, możesz ją poprawić)</label><textarea id="scMem" placeholder="Pusta, dopóki historia jest krótka."></textarea></div>
   <p class="hint" id="scEditHint">„Udostępnij" zapisuje samą postać, bez waszej rozmowy i bez klucza API — plik możesz wysłać znajomemu, a on wczyta go przez „Importuj scenariusz" w bocznym menu.</p>
@@ -878,10 +876,10 @@ function styleLines(S) {
   const goreLine = ({ off: 'Violence is real but mostly off-screen or brief; do not linger on wounds.', medium: 'Injuries and deaths are shown honestly: blood, wounds, sounds and shock in a few concrete sentences, without dwelling.', high: 'Horror is graphic and visceral: describe wounds, blood, gore, bodies, pain and decay in specific detail, and let characters react with realistic shock and trauma. No sexual violence and nothing gratuitous involving children.' })[S.gore] || '';
   const lenLine = ({ short: 'Normal reply length: 70-120 words.', medium: 'Normal reply length: 120-200 words (not a one-liner, not a wall of text); shorter for quick exchanges.', long: 'Normal reply length: 200-320 words.' })[S.len] || 'Normal reply length: 120-200 words.';
   const lvl = S.nsfwOk && S.playerAge >= 18 ? S.nsfw : 'off';
-  const nsfwLine = 'ABSOLUTE RULE, no setting or request overrides it: never write romantic or sexual content involving anyone who is under 18, looks or acts under 18, or whose age is unknown. ' + (S.kind === 'custom' ? 'That includes every teenager and child. A character\'s age is known only if this scenario states it (Age: N); if it does not, that character is off-limits for sexual content. ' : 'In this story that includes Julie, Ethan, Kristi and every teenager or child. ') + ({
+  const nsfwLine = 'ABSOLUTE RULE, no setting or request overrides it: never write romantic or sexual content involving anyone who is under 18, looks or acts under 18, or whose age is unknown. In this story that includes Julie, Ethan, Kristi and every teenager or child. ' + ({
     off: 'Romance may exist but stays non-explicit: cut away before anything sexual.',
     soft: 'The player has confirmed they are an adult. Between adult characters, desire, flirting, kissing and implied intimacy are allowed; cut away before explicit acts.',
-    explicit: 'The player has confirmed they are an adult and chose 18+ fiction. Between consenting adult characters (all clearly 18+, the player character included), sexual scenes may be written openly, in character and in the story\'s tone. Consent is mutual and clear. No sexual violence. In sexual scenes write explicitly and directly: use plain anatomical and common explicit words instead of euphemisms, do not fade to black, do not moralize, add warnings or break character, and match the vocabulary the player uses. When the player describes an adult character\'s body or looks in their message (often between asterisks), take it as established fact and play along; never answer such a description with a refusal or a disclaimer. This applies only to characters whose adulthood is established.'
+    explicit: 'The player has confirmed they are an adult and chose 18+ fiction. Between consenting adult characters (all clearly 18+, the player character included), sexual scenes may be written openly, in character and in the story\'s tone. Consent is mutual and clear. No sexual violence.'
   })[lvl];
   return { langLine, toneLine, emoLine, goreLine, lenLine, nsfwLine };
 }
@@ -949,8 +947,7 @@ function buildCustomParts(S, extra) {
 - Do not pull in lore, characters or events from an unrelated franchise, book, game or show unless the player explicitly asks for it and it fits what they described.
 - You may invent minor local details and minor background characters in the spirit of the SETTING, but never contradict what is written here.`;
   const setting = `# SETTING\n${S.world && S.world.trim() ? S.world.trim() : '(not specified: keep it grounded and consistent with what the player establishes through play, and with the CHARACTER below)'}`;
-  const bodyOk = S.nsfwOk && S.nsfw === 'explicit' && S.playerAge >= 18 && S.charAge >= 18 && S.charBody && S.charBody.trim();
-  const character = `# CHARACTER YOU PLAY\nName: ${S.charName || 'Nieznany'}\n${S.charAge >= 1 ? 'Age: ' + S.charAge + '\n' : ''}${S.charDesc && S.charDesc.trim() ? S.charDesc.trim() : '(no description given: infer a consistent personality from the setting and play)'}` + (bodyOk ? '\n\nBODY (adult character, for sexual scenes only): ' + S.charBody.trim() + '\nWhen a scene turns sexual, describe her body exactly as written here and stay consistent with it. Outside sexual scenes do not bring these details up.' : '');
+  const character = `# CHARACTER YOU PLAY\nName: ${S.charName || 'Nieznany'}\n${S.charDesc && S.charDesc.trim() ? S.charDesc.trim() : '(no description given: infer a consistent personality from the setting and play)'}`;
   const player = buildPlayer(S);
   const tail = buildTail(S, lenLine, emoLine, extra);
   const system = [rules, setting, character, player].join('\n\n');
@@ -1130,7 +1127,7 @@ const PRESETS = {
 
 const GLOBAL_KEYS = ['apiKey', 'model', 'provider', 'keys', 'models', 'theme', 'oled', 'gore', 'emo', 'len', 'ctx', 'usage', 'think', 'lastBackup', 'temperature', 'lang', 'tone', 'nsfw', 'nsfwOk', 'kbOverride'];
 const uid = () => 's' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
-const newScenario = (over = {}) => ({ id: uid(), name: 'Nowy scenariusz', playerName: '', playerAge: 0, backstory: '', opening: '', notes: '', kind: 'from', point: 2, time: 'day', location: '', present: [], focus: '', charName: '', charDesc: '', charAge: 0, charBody: '', world: '', others: [], messages: [], summary: '', summaryUpTo: 0, journal: [], pins: [], memAt: 0, memUndo: null, deadNow: [], chapters: [], chapterAt: 0, chapterUndo: null, created: Date.now(), updated: Date.now(), ...over });
+const newScenario = (over = {}) => ({ id: uid(), name: 'Nowy scenariusz', playerName: '', playerAge: 0, backstory: '', opening: '', notes: '', kind: 'from', point: 2, time: 'day', location: '', present: [], focus: '', charName: '', charDesc: '', world: '', others: [], messages: [], summary: '', summaryUpTo: 0, journal: [], pins: [], memAt: 0, memUndo: null, deadNow: [], chapters: [], chapterAt: 0, chapterUndo: null, created: Date.now(), updated: Date.now(), ...over });
 const fromPreset = k => { const p = PRESETS[k]; return newScenario({ name: p.name, backstory: p.backstory, opening: p.opening, notes: p.notes, point: p.point, time: p.time, location: p.location, present: p.present.slice(), focus: p.focus }); };
 
 let G = { ver: 3, apiKey: '', model: 'gemini-3.5-flash-lite', provider: 'gemini', keys: null, models: null, theme: 'auto', oled: false, gore: 'medium', emo: 'expressive', len: 'medium', ctx: 'auto', usage: { day: '', n: 0, left: null }, think: 'auto', lastBackup: 0, temperature: 0.85, lang: 'en', tone: 'natural', nsfw: 'off', nsfwOk: false, kbOverride: null, activeId: null };
@@ -1403,8 +1400,8 @@ async function generate() {
       const { finish, blocked } = await streamGemini(pr.system, withTail(toContents(), pr.tail), t => {
         const stick = nearBottom(); acc += t; holder.innerHTML = messageHTML(acc); if (stick) toBottom();
       });
-      if (blocked) { errMsg = `Filtr Google zablokował tę wiadomość (${blocked}). Aplikacja nie może go wyłączyć. Jeśli postać jest dorosła, napisz to wprost (np. „she is 25”, „woman”), upewnij się, że ma wiek w karcie postaci („Edytuj scenariusz”), i spróbuj krócej.`; break; }
-      if (acc.trim().length < 220 && /^(i'?m sorry|sorry, but|i can(?:'|no)t (help|assist|comply|continue)|przepraszam, ale|nie mogę (pomóc|kontynuować))/i.test(acc.trim())) { errMsg = 'Model odmówił odpowiedzi (własny filtr Gemini, nie aplikacji). Kliknij „Ponów”. Pomaga też wiek postaci (od 18) w jej karcie i wiadomość napisana krócej albo wprost o dorosłej postaci.'; acc = ''; break; }
+      if (blocked) { errMsg = `Dostawca zablokował tę wiadomość (${blocked}). Sformułuj ją inaczej.`; break; }
+      if (acc.trim().length < 220 && /^(i'?m sorry|sorry, but|i can(?:'|no)t (help|assist|comply|continue)|przepraszam, ale|nie mogę (pomóc|kontynuować))/i.test(acc.trim())) { errMsg = 'Model odmówił odpowiedzi (filtr bezpieczeństwa). Kliknij „Ponów”, obniż brutalność w ustawieniach albo wybierz inny model.'; acc = ''; break; }
       if (!acc.trim()) { errMsg = `Model nie zwrócił tekstu${finish && finish !== 'STOP' ? ' (' + finish + ')' : ''}. Kliknij „Ponów".`; break; }
       if (/^(length|MAX_TOKENS)$/.test(finish || '')) acc = trimSentence(acc);
       leaks = findLeaks(acc, terms, allowed);
@@ -1849,7 +1846,6 @@ function scSetKind(k) {
   scKind = k;
   document.querySelectorAll('#scKindSeg button').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.k === k)));
   $('#scPresetRow').hidden = k !== 'from'; $('#scStartOnly').hidden = k !== 'from'; $('#scCustomOnly').hidden = k !== 'custom';
-  ['#scIdeaRow', '#scLocRowC', '#scTimeRowC'].forEach(q => { $(q).hidden = false; }); scBodyGate();
   $('#scStoryLbl').textContent = k === 'custom' ? 'Kim jest twoja postać (opcjonalnie — narrator dopyta w grze, jeśli to zostawisz puste)' : 'Kim jest twoja postać (najlepiej po angielsku)';
   if (k === 'custom') { $('#scName').value = ''; $('#scPlayer').value = ''; $('#scStory').value = ''; $('#scOpen').value = ''; $('#scNotes').value = ''; }
   else scApplyPreset($('#scPreset').value || 'julie');
@@ -1869,32 +1865,16 @@ function openScenarioDialog(id) {
   $('#scSave').textContent = sc ? 'Zapisz' : 'Utwórz';
   $('#scPoint').innerHTML = KB.eps.map(e => `<option value="${e.idx}">${epName(e)}</option>`).join('');
   if (sc) {
-    $('#scStartOnly').hidden = true;
-    const cu = sc.kind === 'custom'; $('#scCustomOnly').hidden = !cu;
-    ['#scIdeaRow', '#scLocRowC', '#scTimeRowC'].forEach(q => { $(q).hidden = true; });
-    if (cu) { $('#scCharName').value = sc.charName || ''; $('#scCharDesc').value = sc.charDesc || ''; $('#scCharAge').value = sc.charAge || ''; $('#scCharBody').value = sc.charBody || ''; $('#scWorld').value = sc.world || ''; $('#scOthers').value = (sc.others || []).join(', '); }
+    $('#scStartOnly').hidden = true; $('#scCustomOnly').hidden = true;
     $('#scName').value = sc.name; $('#scAge').value = sc.playerAge || ''; $('#scPlayer').value = sc.playerName; $('#scStory').value = sc.backstory; $('#scOpen').value = sc.opening; $('#scNotes').value = sc.notes; $('#scMem').value = sc.summary;
   } else {
     $('#scPreset').innerHTML = Object.keys(PRESETS).map(k => `<option value="${k}">${escHtml(PRESETS[k].label)}</option>`).join('');
     $('#scPreset').value = 'julie'; scApplyPreset('julie');
-    $('#scAge').value = ''; $('#scCharName').value = ''; $('#scCharDesc').value = ''; $('#scCharAge').value = ''; $('#scCharBody').value = ''; $('#scWorld').value = ''; $('#scOthers').value = ''; $('#scLocC').value = ''; scSetTime('day', '#scTimeC');
+    $('#scAge').value = ''; $('#scCharName').value = ''; $('#scCharDesc').value = ''; $('#scWorld').value = ''; $('#scOthers').value = ''; $('#scLocC').value = ''; scSetTime('day', '#scTimeC');
     scSetKind('from');
   }
-  scBodyGate();
   scDlg.showModal();
 }
-function scBodyGate() {
-  const ta = $('#scCharBody'), h = $('#scBodyHint');
-  const cAge = parseInt($('#scCharAge').value, 10) || 0, pAge = parseInt($('#scAge').value, 10) || 0;
-  let why = '';
-  if (!G.nsfwOk || G.nsfw !== 'explicit') why = 'Odblokuje się po włączeniu Ustawienia → 18+ → „Jawne” i potwierdzeniu pełnoletności.';
-  else if (pAge < 18) why = 'Wpisz wiek swojej postaci (od 18), żeby odblokować to pole.';
-  else if (cAge < 18) why = 'Wpisz wiek opisywanej postaci (od 18), żeby odblokować to pole.';
-  ta.disabled = !!why;
-  h.textContent = why || 'Narrator użyje tego tylko w scenach erotycznych, razem z wiekiem postaci.';
-}
-$('#scAge').addEventListener('input', scBodyGate);
-$('#scCharAge').addEventListener('input', scBodyGate);
 $('#newScBtn').onclick = () => openScenarioDialog(null);
 document.querySelectorAll('#scKindSeg button').forEach(b => b.onclick = () => scSetKind(b.dataset.k));
 document.querySelectorAll('#scTimeC button').forEach(b => b.onclick = () => scSetTime(b.dataset.time, '#scTimeC'));
@@ -1913,7 +1893,6 @@ $('#scGen').onclick = async () => {
     const t = await generateOnce(sys, [{ role: 'user', parts: [{ text: idea }] }], 0.9, 900, undefined, { type: 'OBJECT', properties: { name: { type: 'STRING' }, description: { type: 'STRING' }, world: { type: 'STRING' } }, required: ['name', 'description', 'world'] });
     const j = JSON.parse(t.replace(/```json|```/g, '').trim());
     $('#scCharName').value = j.name || ''; $('#scCharDesc').value = j.description || ''; $('#scWorld').value = j.world || ''; if (!$('#scName').value) $('#scName').value = j.name || '';
-    const am = /Age:\s*(\d{1,3})/i.exec(j.description || ''); if (am) $('#scCharAge').value = am[1]; scBodyGate();
     say('Karta gotowa. Sprawdź ją i popraw.');
   } catch (e) { say('Nie udało się: ' + ((e && e.message) || 'nieznany błąd') + '. Spróbuj jeszcze raz.'); }
   b.disabled = false; b.textContent = 'Rozwiń w kartę';
@@ -1921,20 +1900,14 @@ $('#scGen').onclick = async () => {
 $('#scSave').onclick = () => {
   const f = { name: $('#scName').value.trim() || 'Nowy scenariusz', playerName: $('#scPlayer').value.trim(), playerAge: Math.max(0, parseInt($('#scAge').value, 10) || 0), backstory: $('#scStory').value.trim(), opening: $('#scOpen').value.trim(), notes: $('#scNotes').value.trim() };
   if (scEditId) {
-    const cur = SC.find(s => s.id === scEditId);
-    if (cur.kind === 'custom') {
-      const old = cur.charName, nm = $('#scCharName').value.trim() || old || 'Postać';
-      Object.assign(f, { charName: nm, charDesc: $('#scCharDesc').value.trim(), charAge: Math.max(0, parseInt($('#scCharAge').value, 10) || 0), charBody: $('#scCharBody').value.trim(), world: $('#scWorld').value.trim(), others: $('#scOthers').value.split(',').map(x => x.trim()).filter(Boolean) });
-      if (nm !== old) { cur.present = (cur.present || []).map(x => x === old ? nm : x); if (cur.focus === old) f.focus = nm; }
-    }
-    Object.assign(cur, f, { summary: $('#scMem').value });
+    Object.assign(SC.find(s => s.id === scEditId), f, { summary: $('#scMem').value });
     save(); renderAll(); scDlg.close(); toast('Zapisano scenariusz „' + f.name + '”.', 'ok'); return;
   }
   let sc;
   if (scKind === 'custom') {
     const charName = $('#scCharName').value.trim() || 'Postać';
     const others = $('#scOthers').value.split(',').map(x => x.trim()).filter(Boolean);
-    sc = newScenario({ ...f, kind: 'custom', charName, charDesc: $('#scCharDesc').value.trim(), charAge: Math.max(0, parseInt($('#scCharAge').value, 10) || 0), charBody: $('#scCharBody').value.trim(), world: $('#scWorld').value.trim(), others, time: scDraft.time, location: $('#scLocC').value.trim(), present: [charName, ...others], focus: charName });
+    sc = newScenario({ ...f, kind: 'custom', charName, charDesc: $('#scCharDesc').value.trim(), world: $('#scWorld').value.trim(), others, time: scDraft.time, location: $('#scLocC').value.trim(), present: [charName, ...others], focus: charName });
   } else {
     sc = newScenario({ ...f, kind: 'from', point: +$('#scPoint').value, time: scDraft.time, location: $('#scLoc').value.trim(), present: scDraft.present.slice(), focus: scDraft.focus || '' });
   }
