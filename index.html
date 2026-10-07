@@ -195,6 +195,9 @@ dialog[open]::backdrop{animation:dlg-fade .25s ease}
 #editTxt{width:100%;min-height:42dvh;max-height:none;font:1.02rem/1.6 var(--serif);padding:.8rem .9rem}
 #editCnt{text-align:right;margin:.3rem 0 0}
 .you{cursor:pointer}
+.who{display:flex;align-items:center;gap:.5rem}
+.who::before{display:none}
+.av{flex:none;width:1.75rem;height:1.75rem;border-radius:50%;display:grid;place-items:center;background:hsl(var(--h) 45% var(--who-l));color:var(--bg);font:700 .85rem/1 var(--sans);box-shadow:0 0 0 2px hsl(var(--h) 42% var(--edge-l)/.35)}
 </style>
 </head>
 <body>
@@ -1202,7 +1205,7 @@ function messageHTML(text) {
   return text.split(/\n+/).map(s => s.trim()).filter(Boolean).map(l => {
     const { who, say } = parseLine(l);
     return who
-      ? `<div class="speech" style="--h:${hue(who)}"><span class="who">${renderInline(who)}</span><span class="say">${renderInline(say)}</span></div>`
+      ? `<div class="speech" style="--h:${hue(who)}"><span class="who"><span class="av" aria-hidden="true">${(who.match(/\p{L}/u) || ['?'])[0].toUpperCase()}</span><span>${renderInline(who)}</span></span><span class="say">${renderInline(say)}</span></div>`
       : `<p class="narr">${renderInline(l)}</p>`;
   }).join('');
 }
