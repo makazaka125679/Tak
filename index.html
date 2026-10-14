@@ -97,6 +97,20 @@ dialog::backdrop{background:rgba(4,10,12,.6)}
 .actions{display:flex;gap:.5rem;flex-wrap:wrap;margin-top:1rem}
 hr{border:none;border-top:1px solid var(--line);margin:1.3rem 0}
 
+.sheet{counter-reset:grp}
+.grp{margin:1.2rem 0 0;padding-top:1rem;border-top:1px solid var(--line)}
+.grp>h3{font:600 1.05rem var(--serif);margin:0 0 .3rem;display:flex;align-items:center;gap:.5rem}
+.grp>h3::before{counter-increment:grp;content:counter(grp);width:1.5rem;height:1.5rem;border-radius:50%;background:var(--accent);color:var(--accent-ink);font:600 .8rem var(--sans);display:grid;place-items:center;flex:none}
+.grp>h3 small{font:400 .82rem var(--sans);color:var(--muted)}
+.sub{font-size:.88rem;color:var(--muted);margin:0 0 .6rem}
+details.grp>summary{cursor:pointer;font:600 1.05rem var(--serif)}
+.kinds{display:grid;gap:.5rem}
+.kind{text-align:left;display:flex;flex-direction:column;gap:.1rem;padding:.6rem .8rem;border:1px solid var(--line);border-radius:12px;background:transparent;cursor:pointer}
+.kind span{font-size:.86rem;color:var(--muted)}
+.kind[aria-pressed=true]{border-color:var(--accent);background:var(--player);box-shadow:inset 0 0 0 1px var(--accent)}
+.cc{border:1px solid var(--line);border-radius:12px;padding:.6rem;display:grid;gap:.5rem;margin-bottom:.6rem}
+.cc textarea,#gWorld textarea{width:100%;min-height:4.5rem;max-height:none}
+#gWorld textarea{min-height:7rem}
 #toast{position:fixed;left:50%;bottom:calc(env(safe-area-inset-bottom,0px) + 6.5rem);transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:.5rem .9rem;border-radius:10px;font-size:.92rem;max-width:90vw;opacity:0;pointer-events:none;transition:opacity .25s;z-index:20}
 #toast{top:auto;margin:0;border:0;overflow:visible}
 #toast.on{opacity:1}
@@ -329,32 +343,64 @@ dialog[open]::backdrop{animation:dlg-fade .25s ease}
 
 <dialog id="scDlg" aria-labelledby="scTitle"><div class="sheet">
   <h2 id="scTitle">Nowy scenariusz</h2>
-  <div class="field" id="scKindRow"><span class="lbl">Rodzaj scenariusza</span><div class="seg" id="scKindSeg"><button data-k="from">Serial From</button><button data-k="custom">Własna postać</button></div></div>
-  <div class="field" id="scPresetRow"><label for="scPreset">Szablon</label><select id="scPreset"></select><p class="hint" id="scPresetHint"></p></div>
   <div class="field"><label for="scName">Nazwa scenariusza</label><input id="scName" autocomplete="off"></div>
-  <div class="field"><label for="scPlayer">Imię twojej postaci</label><input id="scPlayer" autocomplete="off" placeholder="Puste: postać przedstawi się sama"></div>
-  <div class="field"><label for="scAge">Wiek twojej postaci (treści 18+ działają tylko od 18)</label><input id="scAge" type="number" min="1" max="120" inputmode="numeric"></div>
-  <div class="field"><label for="scStory" id="scStoryLbl">Kim jest twoja postać (najlepiej po angielsku)</label><textarea id="scStory"></textarea></div>
-  <div class="field"><label for="scOpen">Scena otwierająca</label><textarea id="scOpen" placeholder="Co dzieje się na początku? Puste: narrator wymyśli."></textarea></div>
-  <div class="field"><label for="scNotes">Dodatkowe zasady dla narratora (opcjonalnie)</label><textarea id="scNotes" placeholder="np. postać nie ma broni; Julie jest w złym humorze"></textarea></div>
-  <div id="scStartOnly">
-    <div class="field"><label for="scPoint">Postacie znają serial do końca odcinka</label><select id="scPoint"></select></div>
-    <div class="field"><label for="scLoc">Miejsce na start</label><input id="scLoc" list="locList" autocomplete="off"></div>
-    <div class="field"><span class="lbl">Pora dnia</span><div class="seg" id="scTime"><button data-time="day">Dzień</button><button data-time="night">Noc</button></div></div>
-    <div class="field"><span class="lbl">Kto jest w scenie na start</span><div class="chips" id="scChips"></div></div>
-  </div>
-  <div id="scCustomOnly" hidden>
-    <div class="field"><label for="scIdea">Opisz jednym zdaniem (opcjonalnie)</label><div class="inline"><input id="scIdea" autocomplete="off" placeholder="np. cyniczna kapitan statku kosmicznego"><button class="btn" id="scGen" type="button">Rozwiń w kartę</button></div><p class="hint" id="scGenMsg" role="status">Model wypełni imię, opis i świat poniżej. Potem możesz wszystko poprawić.</p></div>
-    <div class="field"><label for="scCharName">Imię postaci</label><input id="scCharName" autocomplete="off" placeholder="np. Aria Nightshade"></div>
-    <div class="field"><label for="scCharDesc">Osobowość, wygląd, sposób mówienia</label><textarea id="scCharDesc" placeholder="Opisz postać: charakter, jak mówi, jak wygląda, co ją napędza, do kogo się zwraca."></textarea></div>
-    <div class="field"><label for="scWorld">Świat / otoczenie (opcjonalnie)</label><textarea id="scWorld" placeholder="Gdzie i kiedy się to dzieje, jakie tam rządzą zasady. Puste: narrator dopasuje świat do postaci."></textarea></div>
-    <div class="field"><label for="scOthers">Kto jeszcze bywa w scenie (opcjonalnie, po przecinku)</label><input id="scOthers" autocomplete="off" placeholder="np. Kapitan Reyes, Mruczek kot"></div>
-    <div class="field"><label for="scLocC">Miejsce na start</label><input id="scLocC" autocomplete="off"></div>
-    <div class="field"><span class="lbl">Pora dnia</span><div class="seg" id="scTimeC"><button data-time="day">Dzień</button><button data-time="night">Noc</button></div></div>
-  </div>
-  <div class="field" id="scMemRow"><label for="scMem">Pamięć opowieści (narrator uzupełnia ją sam, możesz ją poprawić)</label><textarea id="scMem" placeholder="Pusta, dopóki historia jest krótka."></textarea></div>
-  <p class="hint" id="scEditHint">„Udostępnij" zapisuje samą postać, bez waszej rozmowy i bez klucza API — plik możesz wysłać znajomemu, a on wczyta go przez „Importuj scenariusz" w bocznym menu.</p>
-  <div class="actions" id="scEditActions"><button class="btn" id="scDup">Duplikuj</button><button class="btn" id="scExp">Udostępnij</button><button class="btn" id="scReset">Zacznij od nowa</button><button class="btn danger" id="scDel">Usuń</button></div>
+  <section class="grp" id="scKindRow">
+    <h3>Co tworzysz?</h3>
+    <div class="kinds" id="scKindSeg">
+      <button type="button" class="kind" data-k="world"><b>🌍 Świat</b><span>Bot prowadzi cały świat i wiele postaci naraz: prehistoria, zombie, fantasy, kosmos…</span></button>
+      <button type="button" class="kind" data-k="person"><b>🧑 Zwykła postać</b><span>Rozmowa z jedną osobą jak z człowiekiem: przyjaciel, współlokator, sąsiad…</span></button>
+      <button type="button" class="kind" data-k="from"><b>📺 Serial From</b><span>Postacie ze Stamtąd, z wiedzą do wybranego odcinka.</span></button>
+    </div>
+  </section>
+  <section class="grp" id="gQuick">
+    <h3>Szybki start <small>opcjonalnie</small></h3>
+    <div id="scPresetRow"><label class="lbl" for="scPreset">Szablon</label><select id="scPreset"></select><p class="hint" id="scPresetHint"></p></div>
+    <div id="scTplRow" hidden>
+      <span class="lbl">Kliknij gotowy szablon, a pola niżej się wypełnią</span><div class="chips" id="scTpl"></div>
+      <div class="field"><label for="scIdea">…albo opisz własny pomysł jednym zdaniem</label><div class="inline"><input id="scIdea" autocomplete="off" placeholder="np. świat dinozaurów, miasto wampirów"><button class="btn" id="scGen" type="button">Rozwiń</button></div><p class="hint" id="scGenMsg" role="status">Model wypełni resztę pól. Potem możesz wszystko poprawić.</p></div>
+    </div>
+  </section>
+  <section class="grp" id="gWorld" hidden>
+    <h3 id="scWorldH">Świat</h3><p class="sub" id="scWorldSub"></p>
+    <textarea id="scWorld" placeholder="Gdzie i kiedy się to dzieje, jakie tam rządzą zasady."></textarea>
+  </section>
+  <section class="grp" id="gCast" hidden>
+    <h3 id="scCastH">Postacie</h3><p class="sub" id="scCastSub"></p>
+    <div id="scMain">
+      <div class="field"><label for="scCharName">Imię</label><input id="scCharName" autocomplete="off" placeholder="np. Aria Nightshade"></div>
+      <div class="field"><label for="scCharDesc">Osobowość, wygląd, sposób mówienia</label><textarea id="scCharDesc" placeholder="Charakter, jak mówi, jak wygląda, czego chce, do kogo się zwraca."></textarea></div>
+    </div>
+    <span class="lbl" id="scCastLbl"></span>
+    <div id="scCast"></div>
+    <button class="btn" id="scCastAdd" type="button">＋ Dodaj postać</button>
+  </section>
+  <section class="grp" id="gYou">
+    <h3>Ty</h3>
+    <div class="field"><label for="scPlayer">Imię twojej postaci</label><input id="scPlayer" autocomplete="off" placeholder="Puste: postać przedstawi się sama"></div>
+    <div class="field"><label for="scAge">Wiek twojej postaci (treści 18+ działają tylko od 18)</label><input id="scAge" type="number" min="1" max="120" inputmode="numeric"></div>
+    <div class="field"><label for="scStory" id="scStoryLbl">Kim jest twoja postać</label><textarea id="scStory"></textarea></div>
+  </section>
+  <section class="grp" id="gStart">
+    <h3>Początek</h3>
+    <div class="field"><label for="scOpen">Scena otwierająca</label><textarea id="scOpen" placeholder="Co dzieje się na początku? Puste: narrator wymyśli."></textarea></div>
+    <div id="scStartOnly">
+      <div class="field"><label for="scPoint">Postacie znają serial do końca odcinka</label><select id="scPoint"></select></div>
+      <div class="field"><label for="scLoc">Miejsce na start</label><input id="scLoc" list="locList" autocomplete="off"></div>
+      <div class="field"><span class="lbl">Pora dnia</span><div class="seg" id="scTime"><button type="button" data-time="day">Dzień</button><button type="button" data-time="night">Noc</button></div></div>
+      <div class="field"><span class="lbl">Kto jest w scenie na start</span><div class="chips" id="scChips"></div></div>
+    </div>
+    <div id="scStartC">
+      <div class="field"><label for="scLocC">Miejsce na start</label><input id="scLocC" autocomplete="off" placeholder="np. obóz nad rzeką"></div>
+      <div class="field"><span class="lbl">Pora dnia</span><div class="seg" id="scTimeC"><button type="button" data-time="day">Dzień</button><button type="button" data-time="night">Noc</button></div></div>
+    </div>
+  </section>
+  <details class="grp" id="gAdv">
+    <summary>Zaawansowane</summary>
+    <div class="field"><label for="scNotes">Dodatkowe zasady dla narratora (opcjonalnie)</label><textarea id="scNotes" placeholder="np. nikt nie ma broni palnej; w tym świecie nie ma magii"></textarea></div>
+    <div class="field" id="scMemRow"><label for="scMem">Pamięć opowieści (narrator uzupełnia ją sam, możesz ją poprawić)</label><textarea id="scMem" placeholder="Pusta, dopóki historia jest krótka."></textarea></div>
+    <p class="hint" id="scEditHint">„Udostępnij" zapisuje samą postać, bez waszej rozmowy i bez klucza API — plik możesz wysłać znajomemu, a on wczyta go przez „Importuj scenariusz" w bocznym menu.</p>
+    <div class="actions" id="scEditActions"><button class="btn" id="scDup">Duplikuj</button><button class="btn" id="scExp">Udostępnij</button><button class="btn" id="scReset">Zacznij od nowa</button><button class="btn danger" id="scDel">Usuń</button></div>
+  </details>
   <div class="actions"><button class="btn primary" id="scSave">Utwórz</button><button class="btn" id="scCancel">Anuluj</button></div>
 </div></dialog>
 
@@ -946,8 +992,11 @@ function buildCustomParts(S, extra) {
 - Only what is written in SETTING, CHARACTER, WORLD STATE, PINNED FACTS and EARLIER EVENTS is established fact. Nothing else is assumed true.
 - Do not pull in lore, characters or events from an unrelated franchise, book, game or show unless the player explicitly asks for it and it fits what they described.
 - You may invent minor local details and minor background characters in the spirit of the SETTING, but never contradict what is written here.`;
-  const setting = `# SETTING\n${S.world && S.world.trim() ? S.world.trim() : '(not specified: keep it grounded and consistent with what the player establishes through play, and with the CHARACTER below)'}`;
-  const character = `# CHARACTER YOU PLAY\nName: ${S.charName || 'Nieznany'}\n${S.charDesc && S.charDesc.trim() ? S.charDesc.trim() : '(no description given: infer a consistent personality from the setting and play)'}`;
+  const isW = S.mode === 'world', castL = castOf(S).map(c => `- ${c.name}${c.desc ? ': ' + c.desc : ''}`).join('\n');
+  const setting = `# SETTING\n${S.world && S.world.trim() ? S.world.trim() : '(not specified: keep it grounded and consistent with what the player establishes through play' + (isW ? ')' : ', and with the CHARACTER below)')}`;
+  const character = isW
+    ? `# CAST (people of this world that you voice)\n${castL || '(none named: invent fitting people as the story needs)'}\nThere is no single companion character: you are the whole world, its dangers and every inhabitant. Keep the world alive: events happen on their own and people pursue their own goals. Bring cast members in when it makes sense, and invent new ordinary people that fit the SETTING.`
+    : `# CHARACTER YOU PLAY\nName: ${S.charName || 'Nieznany'}\n${S.charDesc && S.charDesc.trim() ? S.charDesc.trim() : '(no description given: infer a consistent personality from the setting and play)'}${castL ? '\n\n# OTHER CHARACTERS\n' + castL : ''}`;
   const player = buildPlayer(S);
   const tail = buildTail(S, lenLine, emoLine, extra);
   const system = [rules, setting, character, player].join('\n\n');
@@ -1127,7 +1176,7 @@ const PRESETS = {
 
 const GLOBAL_KEYS = ['apiKey', 'model', 'provider', 'keys', 'models', 'theme', 'oled', 'gore', 'emo', 'len', 'ctx', 'usage', 'think', 'lastBackup', 'temperature', 'lang', 'tone', 'nsfw', 'nsfwOk', 'kbOverride'];
 const uid = () => 's' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
-const newScenario = (over = {}) => ({ id: uid(), name: 'Nowy scenariusz', playerName: '', playerAge: 0, backstory: '', opening: '', notes: '', kind: 'from', point: 2, time: 'day', location: '', present: [], focus: '', charName: '', charDesc: '', world: '', others: [], messages: [], summary: '', summaryUpTo: 0, journal: [], pins: [], memAt: 0, memUndo: null, deadNow: [], chapters: [], chapterAt: 0, chapterUndo: null, created: Date.now(), updated: Date.now(), ...over });
+const newScenario = (over = {}) => ({ id: uid(), name: 'Nowy scenariusz', playerName: '', playerAge: 0, backstory: '', opening: '', notes: '', kind: 'from', point: 2, time: 'day', location: '', present: [], focus: '', charName: '', charDesc: '', world: '', others: [], mode: 'person', cast: [], messages: [], summary: '', summaryUpTo: 0, journal: [], pins: [], memAt: 0, memUndo: null, deadNow: [], chapters: [], chapterAt: 0, chapterUndo: null, created: Date.now(), updated: Date.now(), ...over });
 const fromPreset = k => { const p = PRESETS[k]; return newScenario({ name: p.name, backstory: p.backstory, opening: p.opening, notes: p.notes, point: p.point, time: p.time, location: p.location, present: p.present.slice(), focus: p.focus }); };
 
 let G = { ver: 3, apiKey: '', model: 'gemini-3.5-flash-lite', provider: 'gemini', keys: null, models: null, theme: 'auto', oled: false, gore: 'medium', emo: 'expressive', len: 'medium', ctx: 'auto', usage: { day: '', n: 0, left: null }, think: 'auto', lastBackup: 0, temperature: 0.85, lang: 'en', tone: 'natural', nsfw: 'off', nsfwOk: false, kbOverride: null, activeId: null };
@@ -1184,6 +1233,7 @@ const HUES = { julie: 168, boyd: 215, kenny: 38, kristi: 322, jade: 272, victor:
 const hue = n => { const k = n.trim().split(/\s+/)[0].toLowerCase(); if (k in HUES) return HUES[k]; let h = 2166136261; for (const ch of k) { h ^= ch.charCodeAt(0); h = Math.imul(h, 16777619) >>> 0; } return h % 360; };
 const epById = i => KB.eps.find(e => e.idx === i);
 const epName = e => e ? `S${e.s}E${e.e} „${e.title}"` : '';
+const castOf = sc => (sc.cast && sc.cast.length ? sc.cast : (sc.others || []).map(n => ({ name: n, desc: '', start: true })));
 const charsForKind = sc => sc.kind === 'custom' ? [sc.charName, ...(sc.others || [])].filter(Boolean) : characterList(KB, sc.point);
 
 /* ================= RENDERING ================= */
@@ -1218,10 +1268,10 @@ function renderLog() {
   const visible = S.messages.filter(m => m.divider || !m.hidden);
   if (!S.messages.length) {
     const w = document.createElement('div'); w.className = 'welcome';
-    const story = (S.backstory || '').trim();
+    const story = ((S.kind === 'custom' ? (S.mode === 'world' ? S.world : S.charDesc) : '') || S.backstory || '').trim();
     w.innerHTML = `<h1>${escHtml(S.name)}</h1>
       <p>${story ? escHtml(story.length > 260 ? story.slice(0, 257) + '…' : story) : 'Ten scenariusz nie ma jeszcze opisu postaci. Możesz go dodać w edycji scenariusza.'}</p>
-      <p>${S.kind === 'custom' ? 'Narrator prowadzi scenę i gra wszystkie inne postacie naraz.' : 'Narrator prowadzi scenę i gra wszystkie postacie z serialu naraz.'} Możesz też wybrać, z kim rozmawiasz, na dole ekranu.</p>
+      <p>${S.kind === 'custom' ? (S.mode === 'world' ? 'Narrator prowadzi cały świat i gra wszystkie jego postacie naraz.' : 'Narrator prowadzi scenę i gra wszystkie inne postacie naraz.') : 'Narrator prowadzi scenę i gra wszystkie postacie z serialu naraz.'} Możesz też wybrać, z kim rozmawiasz, na dole ekranu.</p>
       <p class="hint" id="wKey"></p>
       <button class="btn primary" id="startBtn">Zacznij historię</button>`;
     log.appendChild(w);
@@ -1291,7 +1341,7 @@ function msgActs(m, i) {
 function startNote() {
   const o = (S.opening || '').trim();
   return '[START] Begin the story now. ' + (o ? 'Opening situation, as described by the player: ' + o + ' ' : '') +
-    `Open with one atmospheric scene of about 150-220 words that sets up this situation, the place, the time of day${S.kind === 'custom' ? ' and a natural hook that brings the player and ' + (S.charName || 'the character') + ' together' : ' and the first sensory hints that this place is wrong'}. Only bring named characters on stage if the opening situation says they are present. Stop where the player can act.`;
+    `Open with one atmospheric scene of about 150-220 words that sets up this situation, the place, the time of day${S.kind === 'custom' ? (S.mode === 'world' ? ' and a natural hook that draws the player into the world and its first immediate situation' : ' and a natural hook that brings the player and ' + (S.charName || 'the character') + ' together') : ' and the first sensory hints that this place is wrong'}. Only bring named characters on stage if the opening situation says they are present. Stop where the player can act.`;
 }
 
 function updateButtons() {
@@ -1797,7 +1847,7 @@ $('#kbDl').onclick = () => {
 
 /* ================= SCENARIOS ================= */
 const side = $('#side'), scDlg = $('#scDlg'), mq = matchMedia('(max-width: 959px)');
-let scEditId = null, scDraft = null, scKind = 'from';
+let scEditId = null, scDraft = null, scKind = 'from', scType = 'world', scMode = 'world', scCast = [];
 
 function syncSide() {
   const open = document.body.classList.contains('side-open');
@@ -1818,7 +1868,7 @@ function renderSide() {
   for (const sc of sorted) {
     const e = sc.kind === 'custom' ? null : epById(sc.point); const n = sc.messages.filter(m => !m.hidden && !m.divider).length;
     const row = document.createElement('div'); row.className = 'sc-item'; row.setAttribute('role', 'listitem'); row.setAttribute('aria-current', String(sc.id === G.activeId));
-    row.innerHTML = `<button class="sc-main"><span class="sc-name">${escHtml(sc.name)}</span><span class="sc-meta">${escHtml(sc.playerName || 'gracz')} · ${e ? 'S' + e.s + 'E' + e.e : (sc.kind === 'custom' ? 'własna postać' : '')} · ${n} wiad.</span></button><button class="sc-edit" aria-label="Edytuj scenariusz: ${escHtml(sc.name)}">${PENCIL}</button>`;
+    row.innerHTML = `<button class="sc-main"><span class="sc-name">${escHtml(sc.name)}</span><span class="sc-meta">${escHtml(sc.playerName || 'gracz')} · ${e ? 'S' + e.s + 'E' + e.e : (sc.kind === 'custom' ? (sc.mode === 'world' ? 'świat' : 'postać') : '')} · ${n} wiad.</span></button><button class="sc-edit" aria-label="Edytuj scenariusz: ${escHtml(sc.name)}">${PENCIL}</button>`;
     row.querySelector('.sc-main').onclick = () => switchTo(sc.id);
     row.querySelector('.sc-edit').onclick = () => openScenarioDialog(sc.id);
     list.appendChild(row);
@@ -1842,13 +1892,73 @@ function scChips() {
   }
 }
 function scSetTime(t, sel) { scDraft.time = t; document.querySelectorAll((sel || '#scTime') + ' button').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.time === t))); }
+const TPL_W = [
+  { l: '🦣 Prehistoria', name: 'Prehistoria', time: 'day', loc: 'Obóz plemienia nad rzeką',
+    world: 'Europe at the end of the last Ice Age, about 14,000 years ago. Small nomadic tribes follow mammoth, reindeer and bison herds across cold steppe and river valleys. Stone, bone, wood and fire are the only technology; no metal, no writing. Winters kill the weak, rival tribes fight over hunting grounds, and cave lions, wolves and cave bears are a daily threat. People trust spirits, ancestors and elders; food, warmth and belonging drive everything.',
+    open: 'Cold dawn at the edge of a tribal camp by a frozen river. Smoke rises from a few hide shelters, and the hunters on watch have just noticed the player approaching.',
+    cast: [['Ketu', 'Age 35, the tribe\'s best hunter. Blunt, protective, trusts actions over words, speaks in short sentences.'], ['Mara', 'Age 52, healer and gatherer. Sharp-tongued, knows every plant and old story, hard to impress.'], ['Rukk', 'Age 20, young hothead hunter who wants to prove himself and distrusts strangers.'], ['Orn', 'Age 70, the shaman. Speaks in riddles and omens, sees spirits in everything.']] },
+  { l: '🧟 Apokalipsa zombie', name: 'Apokalipsa zombie', time: 'night', loc: 'Zabarykadowany blok mieszkalny',
+    world: 'A mid-sized city six weeks after an outbreak. The infected are slow in daylight but swarm and sprint toward loud noise. A bite kills within hours and the victim turns. Power and water are mostly gone, the army has collapsed, and the radio only loops an evacuation message nobody trusts. Survivors hold barricaded buildings, scavenge food, fuel, medicine and ammo, and trust is rare.',
+    open: 'Dusk at a barricaded apartment block. After a tense stand-off at the door, armed survivors let the player in.',
+    cast: [['Dana', 'Age 34, ex-paramedic. Calm, practical, guards the medical supplies, tired of losing people.'], ['Marcus', 'Age 45, former mechanic. Gruff, hides grief behind jokes, builds the barricades.'], ['Nika', 'Age 19, cocky scavenger who knows every rooftop route and takes risks.'], ['Cole', 'Age 38, leader of a rival armed group. Charming, ruthless, always bargaining.']] },
+  { l: '⚔️ Fantasy', name: 'Fantasy', time: 'day', loc: 'Przydrożna karczma przy lesie',
+    world: 'A low-magic medieval kingdom of small baronies, muddy roads, walled towns and old forests. Magic is rare, feared and expensive; most people trust saints and local spirits more than wizards. Bandits, a weak king, plague rumors and a growing cult in the north make travel dangerous. Swords, bows, herbs and wit solve most problems; gold and favors move the world.',
+    open: 'Late afternoon at a roadside inn at the edge of a forest. Rain taps the shutters, and a few wary travelers glance up as the player walks in.',
+    cast: [['Aldric', 'Age 48, wandering monk and healer. Gentle, dryly funny, knows more than he admits.'], ['Sera', 'Age 29, mercenary archer. Sardonic, trusts coin over promises, quietly loyal.'], ['Baron Holt', 'Age 55, local lord. Stern but fair, secretly deep in debt.']] },
+  { l: '☢️ Postapokalipsa', name: 'Postapokalipsa', time: 'day', loc: 'Osada na pustkowiu',
+    world: 'Eighty years after a nuclear war. Scattered settlements trade scrap, ammo and clean water across irradiated wasteland. Mutated animals, raiders and rusted war machines roam the dead highways. Clean water is the real currency, radiation sickness is common, and old-world tech is treated like relics.',
+    open: 'Midday heat over a walled settlement built from shipping containers. The gate guards look the player over before deciding whether to open it.',
+    cast: [['Rook', 'Age 40, caravan guard. Laconic, scarred, never sits with his back to a door.'], ['Doc Ilya', 'Age 58, settlement medic. Anxious, overworked, makes dark jokes.'], ['Vex', 'Age 31, raider lieutenant. Smiling, unpredictable, loyal only to her crew.']] }
+];
+const TPL_P = [
+  { l: '🧑 Przyjaciel', name: 'Rozmowa z Alexem', who: 'Alex', desc: 'Age: 25. Your close friend since school. Warm, funny, teases you, loyal. Talks casually with slang and half-sentences and always has an opinion about your life.', world: 'Ordinary modern life in a European city.', open: 'Alex texts you to meet at your usual café and is already there when you arrive.', loc: 'Kawiarnia' },
+  { l: '🏠 Współlokator', name: 'Współlokator Sam', who: 'Sam', desc: 'Age: 27. Your flatmate. Messy but kind, night owl, dry humor, avoids confrontation but notices when you are off.', world: 'A small shared apartment in a big city, modern day.', open: 'Late evening in the shared kitchen. Sam is eating cereal for dinner and looks up when you walk in.', loc: 'Mieszkanie' },
+  { l: '👋 Sąsiad', name: 'Sąsiad Tom', who: 'Tom', desc: 'Age: 42. The neighbor across the hall. Friendly, nosy, a talker, secretly lonely. Gives unsolicited advice and bakes when stressed.', world: 'An apartment building, modern day.', open: 'You run into Tom on the staircase and he stops you with a big grin.', loc: 'Klatka schodowa' }
+];
+function renderCast() {
+  const box = $('#scCast'); box.innerHTML = '';
+  scCast.forEach((c, i) => {
+    const d = document.createElement('div'); d.className = 'cc';
+    d.innerHTML = '<div class="inline"><input aria-label="Imię postaci" placeholder="Imię"><button type="button" class="btn ghost" aria-label="Usuń postać">✕</button></div><textarea aria-label="Opis postaci" placeholder="Wiek, charakter, jak mówi, czego chce…"></textarea><label class="check"><input type="checkbox"> W scenie od początku</label>';
+    const nm = d.querySelector('input'), ta = d.querySelector('textarea'), cb = d.querySelector('input[type=checkbox]');
+    nm.value = c.name; ta.value = c.desc; cb.checked = !!c.start;
+    nm.oninput = () => { c.name = nm.value; }; ta.oninput = () => { c.desc = ta.value; }; cb.onchange = () => { c.start = cb.checked; };
+    d.querySelector('button').onclick = () => { scCast.splice(i, 1); renderCast(); };
+    box.appendChild(d);
+  });
+  if (!scCast.length) box.innerHTML = '<p class="hint">Na razie nikogo. Możesz zostawić puste — narrator wymyśli ludzi sam.</p>';
+}
+function renderTpl() {
+  const box = $('#scTpl'); box.innerHTML = '';
+  for (const t of (scMode === 'world' ? TPL_W : TPL_P)) { const b = document.createElement('button'); b.type = 'button'; b.textContent = t.l; b.onclick = () => scApplyTpl(t); box.appendChild(b); }
+}
+function scApplyTpl(t) {
+  $('#scName').value = t.name; $('#scWorld').value = t.world; $('#scOpen').value = t.open; $('#scLocC').value = t.loc || ''; scSetTime(t.time || 'day', '#scTimeC');
+  if (scMode === 'person') { $('#scCharName').value = t.who; $('#scCharDesc').value = t.desc; }
+  scCast = (t.cast || []).map(c => ({ name: c[0], desc: c[1], start: scMode === 'person' })); renderCast();
+}
+function scClear() {
+  for (const id of ['scName', 'scPlayer', 'scStory', 'scOpen', 'scNotes', 'scCharName', 'scCharDesc', 'scWorld', 'scLocC', 'scIdea']) $('#' + id).value = '';
+  scCast = []; renderCast(); scSetTime('day', '#scTimeC');
+}
+function scLayout() {
+  const from = scType === 'from', world = scType === 'world', edit = !!scEditId;
+  $('#scKindRow').hidden = edit; $('#gQuick').hidden = edit; $('#scPresetRow').hidden = !from; $('#scTplRow').hidden = from;
+  $('#gWorld').hidden = from; $('#gCast').hidden = from; $('#scMain').hidden = world;
+  $('#scStartOnly').hidden = !from || edit; $('#scStartC').hidden = from || edit;
+  $('#scMemRow').hidden = !edit; $('#scEditHint').hidden = !edit; $('#scEditActions').hidden = !edit;
+  $('#scWorldH').textContent = world ? 'Świat' : 'Otoczenie';
+  $('#scWorldSub').textContent = world ? 'Gdzie i kiedy się to dzieje, jakie tu rządzą zasady, co zagraża ludziom, jaki jest nastrój. Im konkretniej, tym lepiej.' : 'Gdzie i kiedy toczy się rozmowa (opcjonalnie). Puste: narrator dopasuje otoczenie do postaci.';
+  $('#scCastH').textContent = world ? 'Postacie w świecie' : 'Postać, z którą rozmawiasz';
+  $('#scCastSub').textContent = world ? 'Ludzie, których narrator ma grać. Możesz zostawić puste, a narrator wymyśli ich sam.' : 'Opisz ją tak, jak chcesz, żeby się zachowywała i mówiła.';
+  $('#scCastLbl').textContent = world ? '' : 'Inne postacie (opcjonalnie)';
+  $('#scStoryLbl').textContent = from ? 'Kim jest twoja postać (najlepiej po angielsku)' : 'Kim jesteś w tej historii (opcjonalnie — narrator dopyta w grze)';
+  document.querySelectorAll('#scKindSeg button').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.k === scType)));
+}
 function scSetKind(k) {
-  scKind = k;
-  document.querySelectorAll('#scKindSeg button').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.k === k)));
-  $('#scPresetRow').hidden = k !== 'from'; $('#scStartOnly').hidden = k !== 'from'; $('#scCustomOnly').hidden = k !== 'custom';
-  $('#scStoryLbl').textContent = k === 'custom' ? 'Kim jest twoja postać (opcjonalnie — narrator dopyta w grze, jeśli to zostawisz puste)' : 'Kim jest twoja postać (najlepiej po angielsku)';
-  if (k === 'custom') { $('#scName').value = ''; $('#scPlayer').value = ''; $('#scStory').value = ''; $('#scOpen').value = ''; $('#scNotes').value = ''; }
-  else scApplyPreset($('#scPreset').value || 'julie');
+  scType = k; scKind = k === 'from' ? 'from' : 'custom'; scMode = k === 'world' ? 'world' : 'person';
+  scLayout();
+  if (k === 'from') scApplyPreset($('#scPreset').value || 'julie'); else { scClear(); renderTpl(); }
 }
 function scApplyPreset(k) {
   const p = PRESETS[k];
@@ -1861,17 +1971,18 @@ function openScenarioDialog(id) {
   const sc = id ? SC.find(s => s.id === id) : null;
   scEditId = sc ? sc.id : null;
   $('#scTitle').textContent = sc ? 'Edytuj scenariusz' : 'Nowy scenariusz';
-  $('#scKindRow').hidden = !!sc; $('#scPresetRow').hidden = !!sc; $('#scEditHint').hidden = !sc; $('#scMemRow').hidden = !sc; $('#scEditActions').hidden = !sc;
   $('#scSave').textContent = sc ? 'Zapisz' : 'Utwórz';
   $('#scPoint').innerHTML = KB.eps.map(e => `<option value="${e.idx}">${epName(e)}</option>`).join('');
+  scDraft = { point: 2, time: 'day', present: [], focus: '' };
   if (sc) {
-    $('#scStartOnly').hidden = true; $('#scCustomOnly').hidden = true;
+    scKind = sc.kind === 'custom' ? 'custom' : 'from'; scMode = sc.mode === 'world' ? 'world' : 'person'; scType = scKind === 'from' ? 'from' : scMode;
     $('#scName').value = sc.name; $('#scAge').value = sc.playerAge || ''; $('#scPlayer').value = sc.playerName; $('#scStory').value = sc.backstory; $('#scOpen').value = sc.opening; $('#scNotes').value = sc.notes; $('#scMem').value = sc.summary;
+    $('#scCharName').value = sc.charName || ''; $('#scCharDesc').value = sc.charDesc || ''; $('#scWorld').value = sc.world || '';
+    scCast = castOf(sc).map(c => ({ name: c.name, desc: c.desc || '', start: !!c.start })); renderCast(); scLayout();
   } else {
     $('#scPreset').innerHTML = Object.keys(PRESETS).map(k => `<option value="${k}">${escHtml(PRESETS[k].label)}</option>`).join('');
-    $('#scPreset').value = 'julie'; scApplyPreset('julie');
-    $('#scAge').value = ''; $('#scCharName').value = ''; $('#scCharDesc').value = ''; $('#scWorld').value = ''; $('#scOthers').value = ''; $('#scLocC').value = ''; scSetTime('day', '#scTimeC');
-    scSetKind('from');
+    $('#scPreset').value = 'julie'; $('#scAge').value = ''; $('#scGenMsg').textContent = 'Model wypełni resztę pól. Potem możesz wszystko poprawić.';
+    scSetKind('world');
   }
   scDlg.showModal();
 }
@@ -1883,34 +1994,48 @@ $('#scPoint').onchange = e => { scDraft.point = +e.target.value; scChips(); };
 document.querySelectorAll('#scTime button').forEach(b => b.onclick = () => scSetTime(b.dataset.time));
 $('#moreBtn').onclick = () => { const o = $('#memBtn').hidden; $('#memBtn').hidden = !o; $('#histBtn').hidden = !o; $('#moreBtn').setAttribute('aria-expanded', String(o)); };
 $('#scCancel').onclick = () => scDlg.close();
+$('#scCastAdd').onclick = () => { scCast.push({ name: '', desc: '', start: scMode === 'person' }); renderCast(); const l = $('#scCast').querySelectorAll('.cc input:not([type=checkbox])'); if (l.length) l[l.length - 1].focus(); };
 $('#scGen').onclick = async () => {
   const m = $('#scGenMsg'), say = t => { m.textContent = t; }, idea = $('#scIdea').value.trim(); if (!idea) { say('Wpisz najpierw krótki pomysł w polu obok.'); return; }
   if (!CUR().key) { say('Brakuje klucza API Gemini. Wklej go w Ustawienia → Połączenie, potem wróć tutaj.'); return; }
-  say('Piszę kartę postaci…');
+  const w = scMode === 'world', lang = S.lang === 'pl' ? 'Polish' : 'English', str = { type: 'STRING' };
+  say(w ? 'Buduję świat…' : 'Piszę kartę postaci…');
   const b = $('#scGen'); b.disabled = true; b.textContent = 'Piszę…';
   try {
-    const sys = 'You design roleplay characters. From the idea, return JSON: name; description (personality, appearance, how they speak, what drives them; 90-140 words, begin with "Age: N." and make the character an adult unless the idea clearly says otherwise); world (1-2 sentences of setting). Write in the language of the idea.';
-    const t = await generateOnce(sys, [{ role: 'user', parts: [{ text: idea }] }], 0.9, 900, undefined, { type: 'OBJECT', properties: { name: { type: 'STRING' }, description: { type: 'STRING' }, world: { type: 'STRING' } }, required: ['name', 'description', 'world'] });
+    const sys = w
+      ? `You design roleplay worlds. From the idea, return JSON: name (short title); world (3-5 sentences: when and where, rules, dangers, technology, factions, mood); opening (2-3 sentences: the first scene as a newcomer arrives); location (short label); cast (4-5 inhabitants, each {name, description: 25-45 words, adult, personality, how they speak, what they want}). Write in ${lang}.`
+      : `You design roleplay characters. From the idea, return JSON: name; description (personality, appearance, how they speak, what drives them; 90-140 words, begin with "Age: N." and make the character an adult unless the idea clearly says otherwise); world (1-2 sentences of setting); opening (2 sentences: a natural first scene). Write in ${lang}.`;
+    const schema = w
+      ? { type: 'OBJECT', properties: { name: str, world: str, opening: str, location: str, cast: { type: 'ARRAY', items: { type: 'OBJECT', properties: { name: str, description: str }, required: ['name', 'description'] } } }, required: ['name', 'world', 'opening', 'cast'] }
+      : { type: 'OBJECT', properties: { name: str, description: str, world: str, opening: str }, required: ['name', 'description', 'world'] };
+    const t = await generateOnce(sys, [{ role: 'user', parts: [{ text: idea }] }], 0.9, 1800, undefined, schema);
     const j = JSON.parse(t.replace(/```json|```/g, '').trim());
-    $('#scCharName').value = j.name || ''; $('#scCharDesc').value = j.description || ''; $('#scWorld').value = j.world || ''; if (!$('#scName').value) $('#scName').value = j.name || '';
-    say('Karta gotowa. Sprawdź ją i popraw.');
+    if (w) { $('#scWorld').value = j.world || ''; $('#scLocC').value = j.location || ''; scCast = (j.cast || []).map(c => ({ name: c.name || '', desc: c.description || '', start: false })); renderCast(); }
+    else { $('#scCharName').value = j.name || ''; $('#scCharDesc').value = j.description || ''; $('#scWorld').value = j.world || ''; }
+    if (j.opening) $('#scOpen').value = j.opening;
+    if (!$('#scName').value) $('#scName').value = j.name || '';
+    say('Gotowe. Sprawdź i popraw, co chcesz.');
   } catch (e) { say('Nie udało się: ' + ((e && e.message) || 'nieznany błąd') + '. Spróbuj jeszcze raz.'); }
-  b.disabled = false; b.textContent = 'Rozwiń w kartę';
+  b.disabled = false; b.textContent = 'Rozwiń';
 };
 $('#scSave').onclick = () => {
   const f = { name: $('#scName').value.trim() || 'Nowy scenariusz', playerName: $('#scPlayer').value.trim(), playerAge: Math.max(0, parseInt($('#scAge').value, 10) || 0), backstory: $('#scStory').value.trim(), opening: $('#scOpen').value.trim(), notes: $('#scNotes').value.trim() };
+  let cu = null;
+  if (scKind === 'custom') {
+    const cast = scCast.map(c => ({ name: c.name.trim(), desc: c.desc.trim(), start: !!c.start })).filter(c => c.name);
+    const w = scMode === 'world', world = $('#scWorld').value.trim();
+    if (w && !world && !cast.length) { toast('Opisz świat albo dodaj choć jedną postać.'); return; }
+    cu = { kind: 'custom', mode: scMode, charName: w ? '' : ($('#scCharName').value.trim() || 'Postać'), charDesc: w ? '' : $('#scCharDesc').value.trim(), world, cast, others: cast.map(c => c.name) };
+  }
   if (scEditId) {
-    Object.assign(SC.find(s => s.id === scEditId), f, { summary: $('#scMem').value });
+    const sc = SC.find(s => s.id === scEditId), old = sc.charName;
+    Object.assign(sc, f, cu || {}, { summary: $('#scMem').value });
+    if (cu) { const names = charsForKind(sc); sc.present = (sc.present || []).map(n => n === old ? sc.charName : n).filter(n => names.includes(n)); if (sc.focus === old) sc.focus = sc.charName; if (!names.includes(sc.focus)) sc.focus = ''; }
     save(); renderAll(); scDlg.close(); toast('Zapisano scenariusz „' + f.name + '”.', 'ok'); return;
   }
-  let sc;
-  if (scKind === 'custom') {
-    const charName = $('#scCharName').value.trim() || 'Postać';
-    const others = $('#scOthers').value.split(',').map(x => x.trim()).filter(Boolean);
-    sc = newScenario({ ...f, kind: 'custom', charName, charDesc: $('#scCharDesc').value.trim(), world: $('#scWorld').value.trim(), others, time: scDraft.time, location: $('#scLocC').value.trim(), present: [charName, ...others], focus: charName });
-  } else {
-    sc = newScenario({ ...f, kind: 'from', point: +$('#scPoint').value, time: scDraft.time, location: $('#scLoc').value.trim(), present: scDraft.present.slice(), focus: scDraft.focus || '' });
-  }
+  const sc = cu
+    ? newScenario({ ...f, ...cu, time: scDraft.time, location: $('#scLocC').value.trim(), present: [cu.charName, ...cu.cast.filter(c => c.start).map(c => c.name)].filter(Boolean), focus: cu.charName })
+    : newScenario({ ...f, kind: 'from', point: +$('#scPoint').value, time: scDraft.time, location: $('#scLoc').value.trim(), present: scDraft.present.slice(), focus: scDraft.focus || '' });
   if (busy && ctl) ctl.abort();
   SC.push(sc); G.activeId = sc.id; save(); renderAll(); scDlg.close(); closeSide(); toast('Utworzono scenariusz „' + sc.name + '”.', 'ok');
 };
@@ -2009,7 +2134,7 @@ $('#impFile').onchange = async e => {
 };
 setTimeout(() => { if (S.messages.length > 20 && Date.now() - (G.lastBackup || 0) > 5 * 864e5) toast('Minęło kilka dni od ostatniej kopii zapasowej. Zrób ją w Ustawieniach.'); }, 2500);
 
-const APP_VERSION = '2026-09-22.2';
+const APP_VERSION = '2026-10-14.1';
 let swReg = null, swRefreshing = false;
 if ('serviceWorker' in navigator && /^https?:$/.test(location.protocol)) {
   navigator.serviceWorker.register('sw.js', { updateViaCache: 'none' }).then(reg => { swReg = reg; reg.update().catch(() => {}); }).catch(() => {});
