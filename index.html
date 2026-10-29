@@ -212,6 +212,24 @@ dialog[open]::backdrop{animation:dlg-fade .25s ease}
 .who{display:flex;align-items:center;gap:.5rem}
 .who::before{display:none}
 .av{flex:none;width:1.75rem;height:1.75rem;border-radius:50%;display:grid;place-items:center;background:hsl(var(--h) 45% var(--who-l));color:var(--bg);font:700 .85rem/1 var(--sans);box-shadow:0 0 0 2px hsl(var(--h) 42% var(--edge-l)/.35)}
+/* ===== v3: tworzenie postaci i światów ===== */
+#scDlg textarea{max-height:60dvh;overflow-y:auto;resize:none}
+.castbar{display:flex;justify-content:space-between;align-items:baseline;gap:.5rem}
+.castbar .hint{margin:0}
+.castacts .btn{min-height:2.4rem}
+.cc{padding:0;gap:0;overflow:hidden}
+.cc-h{display:flex;align-items:center}
+.cc-t{flex:1;min-width:0;display:flex;align-items:center;gap:.65rem;padding:.55rem .65rem;background:transparent;border:0;text-align:left;cursor:pointer;color:var(--ink)}
+.cc-n{display:flex;flex-direction:column;min-width:0}
+.cc-n b{font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.cc-n small{color:var(--muted);font-size:.82rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.cc-h>.btn{margin-right:.4rem;min-width:2.2rem}
+.cc-body{display:grid;gap:.5rem;padding:.7rem;border-top:1px solid var(--line)}
+.cc-mv{display:flex;gap:.4rem;flex-wrap:wrap}
+.cc.gone{display:flex;justify-content:space-between;align-items:center;gap:.5rem;padding:.4rem .4rem .4rem .75rem;border-style:dashed;color:var(--muted)}
+#scPastePanel{padding:.7rem;gap:.5rem;margin-top:.6rem}
+#scPastePanel .hint{margin:0}
+#scDirty{margin-left:.2rem}
 </style>
 </head>
 <body>
@@ -370,9 +388,15 @@ dialog[open]::backdrop{animation:dlg-fade .25s ease}
       <div class="field"><label for="scCharName">Imię</label><input id="scCharName" autocomplete="off" placeholder="np. Aria Nightshade"></div>
       <div class="field"><label for="scCharDesc">Osobowość, wygląd, sposób mówienia</label><textarea id="scCharDesc" placeholder="Charakter, jak mówi, jak wygląda, czego chce, do kogo się zwraca."></textarea></div>
     </div>
-    <span class="lbl" id="scCastLbl"></span>
+    <div class="castbar"><span class="lbl" id="scCastLbl"></span><span class="hint" id="scCastN"></span></div>
     <div id="scCast"></div>
-    <button class="btn" id="scCastAdd" type="button">＋ Dodaj postać</button>
+    <div class="actions castacts"><button class="btn" id="scCastAdd" type="button">＋ Dodaj postać</button><button class="btn" id="scCastPaste" type="button">📋 Wklej listę</button><button class="btn ghost" id="scCastFold" type="button" hidden>Zwiń wszystkie</button></div>
+    <div class="cc" id="scPastePanel" hidden>
+      <p class="hint">Wklej kilka postaci naraz: każda w osobnej linii („Ketu — myśliwy, 35 lat”, „Mara: uzdrowicielka”) albo w blokach (imię w pierwszej linii, opis pod nią). Działają też punktory i nagłówki ## Imię. Postać o tym samym imieniu dostanie nowy opis.</p>
+      <textarea id="scPasteTxt" class="nosnap" aria-label="Lista postaci do wklejenia" placeholder="Ketu — Age 35, myśliwy…&#10;Mara — Age 52, uzdrowicielka…"></textarea>
+      <p class="hint" id="scPasteN" role="status"></p>
+      <div class="actions"><button class="btn primary" id="scPasteGo" type="button" disabled>Dodaj</button><button class="btn" id="scPasteClip" type="button">Wklej ze schowka</button><button class="btn ghost" id="scPasteX" type="button">Zamknij</button></div>
+    </div>
   </section>
   <section class="grp" id="gYou">
     <h3>Ty</h3>
@@ -401,7 +425,7 @@ dialog[open]::backdrop{animation:dlg-fade .25s ease}
     <p class="hint" id="scEditHint">„Udostępnij" zapisuje samą postać, bez waszej rozmowy i bez klucza API — plik możesz wysłać znajomemu, a on wczyta go przez „Importuj scenariusz" w bocznym menu.</p>
     <div class="actions" id="scEditActions"><button class="btn" id="scDup">Duplikuj</button><button class="btn" id="scExp">Udostępnij</button><button class="btn" id="scReset">Zacznij od nowa</button><button class="btn danger" id="scDel">Usuń</button></div>
   </details>
-  <div class="actions"><button class="btn primary" id="scSave">Utwórz</button><button class="btn" id="scCancel">Anuluj</button></div>
+  <div class="actions"><button class="btn primary" id="scSave">Utwórz</button><button class="btn" id="scCancel">Anuluj</button><span class="dirty" id="scDirty" hidden>● niezapisane zmiany</span></div>
 </div></dialog>
 
 <dialog id="kbDlg" aria-labelledby="kbTitle"><div class="sheet">
@@ -1915,18 +1939,78 @@ const TPL_P = [
   { l: '🏠 Współlokator', name: 'Współlokator Sam', who: 'Sam', desc: 'Age: 27. Your flatmate. Messy but kind, night owl, dry humor, avoids confrontation but notices when you are off.', world: 'A small shared apartment in a big city, modern day.', open: 'Late evening in the shared kitchen. Sam is eating cereal for dinner and looks up when you walk in.', loc: 'Mieszkanie' },
   { l: '👋 Sąsiad', name: 'Sąsiad Tom', who: 'Tom', desc: 'Age: 42. The neighbor across the hall. Friendly, nosy, a talker, secretly lonely. Gives unsolicited advice and bakes when stressed.', world: 'An apartment building, modern day.', open: 'You run into Tom on the staircase and he stops you with a big grin.', loc: 'Klatka schodowa' }
 ];
+function initial(n) { return (n.trim()[0] || '?').toUpperCase(); }
+function fit(t) { t.style.height = 'auto'; if (t.scrollHeight) t.style.height = (t.scrollHeight + 2) + 'px'; }
+function fitAll() { scDlg.querySelectorAll('textarea').forEach(t => { if (t.offsetParent) fit(t); }); }
+function castHead(c) {
+  const n = c.name.trim(), d = c.desc.trim().replace(/\s+/g, ' ').slice(0, 90);
+  return `<span class="av" style="--h:${n ? hue(n) : 200}">${n ? escHtml(initial(n)) : '+'}</span><span class="cc-n"><b>${n ? escHtml(n) : '<i>Nowa postać</i>'}</b><small>${d ? escHtml(d) : 'bez opisu'}</small></span>`;
+}
+function parseCast(text) {
+  const t = String(text || '').replace(/\r/g, '').trim(); if (!t) return [];
+  const bullet = x => x.replace(/^\s*(?:[-*•·▪◦–—>]+|\d+[.)])\s+/, '').replace(/\*\*|__/g, '').trim();
+  const lines = t.split('\n');
+  if (lines.some(l => /^#{1,4}\s+\S/.test(l))) {
+    const o = [];
+    for (const l of lines) { const m = l.match(/^#{1,4}\s+(.+)/); if (m) o.push({ name: m[1].replace(/[:#*]+$/, '').trim(), desc: '' }); else if (o.length && l.trim()) { const last = o[o.length - 1]; last.desc += (last.desc ? ' ' : '') + bullet(l); } }
+    return o.filter(x => x.name);
+  }
+  const blocks = t.split(/\n\s*\n/).map(b => b.split('\n').map(bullet).filter(Boolean));
+  if (blocks.every(b => b.length > 1 && b[0].length <= 40 && !/[.!?]$/.test(b[0]))) return blocks.map(b => ({ name: b[0].replace(/:$/, ''), desc: b.slice(1).join(' ') }));
+  const o = [];
+  for (const raw of lines) {
+    const l = bullet(raw); if (!l) continue;
+    const m = l.match(/^(.{1,40}?)\s+[—–-]\s+(.+)$/) || l.match(/^([^:()]{1,40}):\s*(.+)$/) || l.match(/^([^()]{1,40}?)\s*\((.+?)\)\s*[.:]?\s*(.*)$/);
+    if (m) o.push({ name: m[1].trim(), desc: (m[2] + (m[3] ? ' ' + m[3] : '')).trim() });
+    else if (l.length <= 40) o.push({ name: l.replace(/[:.]$/, ''), desc: '' });
+    else if (o.length) o[o.length - 1].desc += ' ' + l;
+  }
+  return o;
+}
+function pasteSplit(e, first, rest) {
+  const t = e.clipboardData ? e.clipboardData.getData('text') : ''; if (!t || (t.length < 60 && t.indexOf('\n') < 0)) return;
+  const p = parseCast(t); if (!p.length) return;
+  e.preventDefault(); first(p[0]); if (p.length > 1 && rest) rest(p.slice(1));
+}
 function renderCast() {
   const box = $('#scCast'); box.innerHTML = '';
+  const live = scCast.filter(c => !c._gone);
+  $('#scCastN').textContent = live.length ? 'Postaci: ' + live.length : '';
+  $('#scCastFold').hidden = live.length < 2;
+  $('#scCastFold').textContent = live.every(c => c._open) ? 'Zwiń wszystkie' : 'Rozwiń wszystkie';
   scCast.forEach((c, i) => {
-    const d = document.createElement('div'); d.className = 'cc';
-    d.innerHTML = '<div class="inline"><input aria-label="Imię postaci" placeholder="Imię"><button type="button" class="btn ghost" aria-label="Usuń postać">✕</button></div><textarea aria-label="Opis postaci" placeholder="Wiek, charakter, jak mówi, czego chce…"></textarea><label class="check"><input type="checkbox"> W scenie od początku</label>';
-    const nm = d.querySelector('input'), ta = d.querySelector('textarea'), cb = d.querySelector('input[type=checkbox]');
+    const d = document.createElement('div');
+    if (c._gone) {
+      d.className = 'cc gone';
+      d.innerHTML = '<span>Usunięto: <b></b></span><button type="button" class="btn ghost">Cofnij</button>';
+      d.querySelector('b').textContent = c.name.trim() || 'postać';
+      d.querySelector('button').onclick = () => { c._gone = false; renderCast(); fitAll(); };
+      box.appendChild(d); return;
+    }
+    d.className = 'cc';
+    d.innerHTML = `<div class="cc-h"><button type="button" class="cc-t" aria-expanded="${!!c._open}">${castHead(c)}</button><button type="button" class="btn ghost" data-a="del" aria-label="Usuń postać">✕</button></div><div class="cc-body"${c._open ? '' : ' hidden'}><input aria-label="Imię postaci" placeholder="Imię" autocomplete="off"><textarea aria-label="Opis postaci" placeholder="Wiek, charakter, jak mówi, czego chce…"></textarea><label class="check"><input type="checkbox"> W scenie od początku</label><div class="cc-mv"><button type="button" class="btn ghost" data-a="up"${i ? '' : ' disabled'}>↑ Wyżej</button><button type="button" class="btn ghost" data-a="dn"${i < scCast.length - 1 ? '' : ' disabled'}>↓ Niżej</button><button type="button" class="btn ghost" data-a="dup">Duplikuj</button></div></div>`;
+    const body = d.querySelector('.cc-body'), head = d.querySelector('.cc-t'), nm = body.querySelector('input:not([type=checkbox])'), ta = body.querySelector('textarea'), cb = body.querySelector('input[type=checkbox]');
     nm.value = c.name; ta.value = c.desc; cb.checked = !!c.start;
-    nm.oninput = () => { c.name = nm.value; }; ta.oninput = () => { c.desc = ta.value; }; cb.onchange = () => { c.start = cb.checked; };
-    d.querySelector('button').onclick = () => { scCast.splice(i, 1); renderCast(); };
+    const sync = () => { head.innerHTML = castHead(c); };
+    nm.oninput = () => { c.name = nm.value; sync(); };
+    ta.oninput = () => { c.desc = ta.value; sync(); };
+    cb.onchange = () => { c.start = cb.checked; };
+    nm.onkeydown = e => { if (e.key === 'Enter') { e.preventDefault(); ta.focus(); } };
+    nm.onpaste = e => pasteSplit(e,
+      p => { c.name = p.name; c.desc = p.desc || c.desc; nm.value = c.name; ta.value = c.desc; sync(); fit(ta); },
+      rest => { scCast.splice(i + 1, 0, ...rest.map(x => ({ name: x.name, desc: x.desc, start: c.start, _open: false }))); renderCast(); toast('Wklejono ' + (rest.length + 1) + ' postaci.', 'ok'); });
+    head.onclick = () => { c._open = !c._open; body.hidden = !c._open; head.setAttribute('aria-expanded', String(!!c._open)); if (c._open) fit(ta); };
+    d.onclick = e => {
+      const a = e.target.closest('[data-a]'); if (!a) return;
+      const k = a.dataset.a;
+      if (k === 'del') c._gone = true;
+      else if (k === 'dup') scCast.splice(i + 1, 0, { name: c.name.trim() ? c.name.trim() + ' (kopia)' : '', desc: c.desc, start: c.start, _open: true });
+      else { const j = k === 'up' ? i - 1 : i + 1; if (!scCast[j]) return; [scCast[i], scCast[j]] = [scCast[j], scCast[i]]; }
+      renderCast(); fitAll();
+    };
     box.appendChild(d);
   });
-  if (!scCast.length) box.innerHTML = '<p class="hint">Na razie nikogo. Możesz zostawić puste — narrator wymyśli ludzi sam.</p>';
+  if (!scCast.length) box.innerHTML = '<p class="hint">Na razie nikogo. Możesz zostawić puste — narrator wymyśli ludzi sam — albo wkleić całą listę przyciskiem poniżej.</p>';
 }
 function renderTpl() {
   const box = $('#scTpl'); box.innerHTML = '';
@@ -1935,7 +2019,7 @@ function renderTpl() {
 function scApplyTpl(t) {
   $('#scName').value = t.name; $('#scWorld').value = t.world; $('#scOpen').value = t.open; $('#scLocC').value = t.loc || ''; scSetTime(t.time || 'day', '#scTimeC');
   if (scMode === 'person') { $('#scCharName').value = t.who; $('#scCharDesc').value = t.desc; }
-  scCast = (t.cast || []).map(c => ({ name: c[0], desc: c[1], start: scMode === 'person' })); renderCast();
+  scCast = (t.cast || []).map(c => ({ name: c[0], desc: c[1], start: scMode === 'person', _open: false })); renderCast(); fitAll();
 }
 function scClear() {
   for (const id of ['scName', 'scPlayer', 'scStory', 'scOpen', 'scNotes', 'scCharName', 'scCharDesc', 'scWorld', 'scLocC', 'scIdea']) $('#' + id).value = '';
@@ -1965,7 +2049,7 @@ function scApplyPreset(k) {
   $('#scPresetHint').textContent = p.hint;
   $('#scName').value = p.name; $('#scPlayer').value = ''; $('#scStory').value = p.backstory; $('#scOpen').value = p.opening; $('#scNotes').value = p.notes;
   scDraft = { point: p.point, time: p.time, present: p.present.slice(), focus: p.focus };
-  $('#scPoint').value = p.point; $('#scLoc').value = p.location; scSetTime(p.time); scChips();
+  $('#scPoint').value = p.point; $('#scLoc').value = p.location; scSetTime(p.time); scChips(); fitAll();
 }
 function openScenarioDialog(id) {
   const sc = id ? SC.find(s => s.id === id) : null;
@@ -1978,13 +2062,13 @@ function openScenarioDialog(id) {
     scKind = sc.kind === 'custom' ? 'custom' : 'from'; scMode = sc.mode === 'world' ? 'world' : 'person'; scType = scKind === 'from' ? 'from' : scMode;
     $('#scName').value = sc.name; $('#scAge').value = sc.playerAge || ''; $('#scPlayer').value = sc.playerName; $('#scStory').value = sc.backstory; $('#scOpen').value = sc.opening; $('#scNotes').value = sc.notes; $('#scMem').value = sc.summary;
     $('#scCharName').value = sc.charName || ''; $('#scCharDesc').value = sc.charDesc || ''; $('#scWorld').value = sc.world || '';
-    scCast = castOf(sc).map(c => ({ name: c.name, desc: c.desc || '', start: !!c.start })); renderCast(); scLayout();
+    scCast = castOf(sc).map((c, _, a) => ({ name: c.name, desc: c.desc || '', start: !!c.start, _open: a.length <= 2 })); renderCast(); scLayout();
   } else {
     $('#scPreset').innerHTML = Object.keys(PRESETS).map(k => `<option value="${k}">${escHtml(PRESETS[k].label)}</option>`).join('');
     $('#scPreset').value = 'julie'; $('#scAge').value = ''; $('#scGenMsg').textContent = 'Model wypełni resztę pól. Potem możesz wszystko poprawić.';
     scSetKind('world');
   }
-  scDlg.showModal();
+  scDlg.showModal(); $('#scPastePanel').hidden = true; scDlg.querySelector('.sheet').scrollTop = 0; fitAll(); scSnap = scVals(); refreshDirty();
 }
 $('#newScBtn').onclick = () => openScenarioDialog(null);
 document.querySelectorAll('#scKindSeg button').forEach(b => b.onclick = () => scSetKind(b.dataset.k));
@@ -1993,8 +2077,8 @@ $('#scPreset').onchange = e => scApplyPreset(e.target.value);
 $('#scPoint').onchange = e => { scDraft.point = +e.target.value; scChips(); };
 document.querySelectorAll('#scTime button').forEach(b => b.onclick = () => scSetTime(b.dataset.time));
 $('#moreBtn').onclick = () => { const o = $('#memBtn').hidden; $('#memBtn').hidden = !o; $('#histBtn').hidden = !o; $('#moreBtn').setAttribute('aria-expanded', String(o)); };
-$('#scCancel').onclick = () => scDlg.close();
-$('#scCastAdd').onclick = () => { scCast.push({ name: '', desc: '', start: scMode === 'person' }); renderCast(); const l = $('#scCast').querySelectorAll('.cc input:not([type=checkbox])'); if (l.length) l[l.length - 1].focus(); };
+$('#scCancel').onclick = () => { if (!scDirty() || confirm('Masz niezapisane zmiany. Odrzucić je?')) scDlg.close(); };
+$('#scCastAdd').onclick = () => { scCast.push({ name: '', desc: '', start: scMode === 'person', _open: true }); renderCast(); fitAll(); const k = $('#scCast').lastElementChild; k.scrollIntoView({ block: 'center', behavior: 'smooth' }); k.querySelector('.cc-body input:not([type=checkbox])').focus({ preventScroll: true }); };
 $('#scGen').onclick = async () => {
   const m = $('#scGenMsg'), say = t => { m.textContent = t; }, idea = $('#scIdea').value.trim(); if (!idea) { say('Wpisz najpierw krótki pomysł w polu obok.'); return; }
   if (!CUR().key) { say('Brakuje klucza API Gemini. Wklej go w Ustawienia → Połączenie, potem wróć tutaj.'); return; }
@@ -2010,11 +2094,11 @@ $('#scGen').onclick = async () => {
       : { type: 'OBJECT', properties: { name: str, description: str, world: str, opening: str }, required: ['name', 'description', 'world'] };
     const t = await generateOnce(sys, [{ role: 'user', parts: [{ text: idea }] }], 0.9, 1800, undefined, schema);
     const j = JSON.parse(t.replace(/```json|```/g, '').trim());
-    if (w) { $('#scWorld').value = j.world || ''; $('#scLocC').value = j.location || ''; scCast = (j.cast || []).map(c => ({ name: c.name || '', desc: c.description || '', start: false })); renderCast(); }
+    if (w) { $('#scWorld').value = j.world || ''; $('#scLocC').value = j.location || ''; scCast = (j.cast || []).map(c => ({ name: c.name || '', desc: c.description || '', start: false, _open: false })); renderCast(); }
     else { $('#scCharName').value = j.name || ''; $('#scCharDesc').value = j.description || ''; $('#scWorld').value = j.world || ''; }
     if (j.opening) $('#scOpen').value = j.opening;
     if (!$('#scName').value) $('#scName').value = j.name || '';
-    say('Gotowe. Sprawdź i popraw, co chcesz.');
+    say('Gotowe. Sprawdź i popraw, co chcesz.'); fitAll(); refreshDirty();
   } catch (e) { say('Nie udało się: ' + ((e && e.message) || 'nieznany błąd') + '. Spróbuj jeszcze raz.'); }
   b.disabled = false; b.textContent = 'Rozwiń';
 };
@@ -2022,7 +2106,17 @@ $('#scSave').onclick = () => {
   const f = { name: $('#scName').value.trim() || 'Nowy scenariusz', playerName: $('#scPlayer').value.trim(), playerAge: Math.max(0, parseInt($('#scAge').value, 10) || 0), backstory: $('#scStory').value.trim(), opening: $('#scOpen').value.trim(), notes: $('#scNotes').value.trim() };
   let cu = null;
   if (scKind === 'custom') {
-    const cast = scCast.map(c => ({ name: c.name.trim(), desc: c.desc.trim(), start: !!c.start })).filter(c => c.name);
+    const live = scCast.filter(c => !c._gone), nameless = live.find(c => !c.name.trim() && c.desc.trim());
+    if (nameless) {
+      nameless._open = true; renderCast(); fitAll();
+      const el = $('#scCast').children[scCast.indexOf(nameless)];
+      if (el) { el.scrollIntoView({ block: 'center' }); el.querySelector('.cc-body input:not([type=checkbox])').focus({ preventScroll: true }); }
+      toast('Ta postać ma opis, ale nie ma imienia.'); return;
+    }
+    const cast = live.map(c => ({ name: c.name.trim(), desc: c.desc.trim(), start: !!c.start })).filter(c => c.name);
+    const seen = new Set(scMode === 'person' ? [($('#scCharName').value.trim() || 'Postać').toLowerCase()] : []);
+    const dup = cast.find(c => { const k = c.name.toLowerCase(); if (seen.has(k)) return true; seen.add(k); return false; });
+    if (dup) { toast('Dwie postacie mają to samo imię: „' + dup.name + '”. Zmień jedno z nich.'); return; }
     const w = scMode === 'world', world = $('#scWorld').value.trim();
     if (w && !world && !cast.length) { toast('Opisz świat albo dodaj choć jedną postać.'); return; }
     cu = { kind: 'custom', mode: scMode, charName: w ? '' : ($('#scCharName').value.trim() || 'Postać'), charDesc: w ? '' : $('#scCharDesc').value.trim(), world, cast, others: cast.map(c => c.name) };
@@ -2079,6 +2173,42 @@ $('#scImport').onchange = async e => {
   e.target.value = '';
 };
 
+/* ---- kreator: niezapisane zmiany, auto-wysokość, wklejanie listy ---- */
+let scSnap = '';
+function scVals() { return JSON.stringify([[...scDlg.querySelectorAll('input:not(#scIdea):not(.nosnap),textarea:not(.nosnap),select')].map(e => e.type === 'checkbox' ? e.checked : e.value), scDraft, scCast.filter(c => !c._gone).length]); }
+function scDirty() { return scVals() !== scSnap; }
+function refreshDirty() { const d = $('#scDirty'); if (d) d.hidden = !scDirty(); }
+scDlg.addEventListener('input', e => { if (e.target.matches('textarea')) fit(e.target); refreshDirty(); });
+scDlg.addEventListener('change', refreshDirty);
+scDlg.addEventListener('click', () => setTimeout(refreshDirty));
+scDlg.addEventListener('cancel', e => { if (scDirty() && !confirm('Masz niezapisane zmiany. Odrzucić je?')) e.preventDefault(); });
+$('#gAdv').addEventListener('toggle', fitAll);
+$('#scCharName').addEventListener('paste', e => pasteSplit(e, p => { $('#scCharName').value = p.name; if (p.desc) $('#scCharDesc').value = p.desc; fitAll(); refreshDirty(); }));
+const pasteTxt = $('#scPasteTxt');
+function pastePreview() {
+  const n = parseCast(pasteTxt.value).length, has = !!pasteTxt.value.trim();
+  $('#scPasteN').textContent = has ? (n ? 'Rozpoznano postaci: ' + n : 'Nie rozpoznaję tu żadnej postaci. Użyj formatu „Imię — opis”.') : '';
+  $('#scPasteGo').disabled = !n;
+}
+$('#scCastPaste').onclick = () => { const p = $('#scPastePanel'); p.hidden = !p.hidden; if (!p.hidden) { p.scrollIntoView({ block: 'nearest', behavior: 'smooth' }); pasteTxt.focus({ preventScroll: true }); } };
+pasteTxt.addEventListener('input', pastePreview);
+$('#scPasteClip').onclick = async () => {
+  try { const t = await navigator.clipboard.readText(); if (!t.trim()) { toast('Schowek jest pusty.'); return; } pasteTxt.value = t; pastePreview(); fit(pasteTxt); }
+  catch (e) { toast('Przeglądarka nie dała dostępu do schowka. Wklej tekst ręcznie w pole.'); pasteTxt.focus(); }
+};
+$('#scPasteGo').onclick = () => {
+  const p = parseCast(pasteTxt.value); let add = 0, upd = 0;
+  for (const x of p) {
+    const ex = scCast.find(c => !c._gone && c.name.trim().toLowerCase() === x.name.toLowerCase());
+    if (ex) { if (x.desc) ex.desc = x.desc; upd++; } else { scCast.push({ name: x.name, desc: x.desc, start: scMode === 'person', _open: p.length === 1 }); add++; }
+  }
+  pasteTxt.value = ''; pastePreview(); $('#scPastePanel').hidden = true; renderCast(); fitAll(); refreshDirty();
+  const msg = [add && 'dodano ' + add, upd && 'zaktualizowano ' + upd].filter(Boolean).join(', ');
+  toast(msg.charAt(0).toUpperCase() + msg.slice(1) + '.', 'ok');
+};
+$('#scPasteX').onclick = () => { $('#scPastePanel').hidden = true; };
+$('#scCastFold').onclick = () => { const live = scCast.filter(c => !c._gone), open = !live.every(c => c._open); live.forEach(c => { c._open = open; }); renderCast(); fitAll(); };
+
 /* ================= MEMORY DIALOG ================= */
 const memDlg = $('#memDlg'), histDlg = $('#histDlg');
 function fillMem() {
@@ -2134,7 +2264,7 @@ $('#impFile').onchange = async e => {
 };
 setTimeout(() => { if (S.messages.length > 20 && Date.now() - (G.lastBackup || 0) > 5 * 864e5) toast('Minęło kilka dni od ostatniej kopii zapasowej. Zrób ją w Ustawieniach.'); }, 2500);
 
-const APP_VERSION = '2026-10-14.1';
+const APP_VERSION = '2026-10-29.1';
 let swReg = null, swRefreshing = false;
 if ('serviceWorker' in navigator && /^https?:$/.test(location.protocol)) {
   navigator.serviceWorker.register('sw.js', { updateViaCache: 'none' }).then(reg => { swReg = reg; reg.update().catch(() => {}); }).catch(() => {});
