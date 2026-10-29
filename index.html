@@ -230,6 +230,32 @@ dialog[open]::backdrop{animation:dlg-fade .25s ease}
 #scPastePanel{padding:.7rem;gap:.5rem;margin-top:.6rem}
 #scPastePanel .hint{margin:0}
 #scDirty{margin-left:.2rem}
+/* ===== v3.1: etapy ===== */
+.stp-off{display:none !important}
+#scSteps{display:flex;gap:.4rem;align-items:center;position:sticky;top:0;z-index:3;background:var(--panel);padding:.5rem 0;margin:0 0 .6rem;border-bottom:1px solid var(--line)}
+#scSteps button{display:flex;align-items:center;gap:.45rem;min-height:2.2rem;padding:.2rem;border-radius:999px;border:1px solid var(--line);background:transparent;cursor:pointer;font-size:.92rem}
+#scSteps i{width:1.7rem;height:1.7rem;border-radius:50%;display:grid;place-items:center;font:600 .82rem var(--sans);font-style:normal}
+#scSteps span{display:none}
+#scSteps [aria-current]{background:var(--accent);color:var(--accent-ink);border-color:var(--accent);padding-right:.85rem}
+#scSteps [aria-current] span{display:inline;font-weight:600}
+.grp>h3::before{display:none}
+#scDlg .grp{margin-top:.2rem;padding-top:0;border-top:0}
+#gAdv>summary{display:none}
+/* ===== v3.2: osobne pola dla typów, płynność ===== */
+@keyframes stp-in{from{opacity:0;transform:translateX(calc(var(--dir,1)*16px))}to{opacity:1;transform:none}}
+#scDlg [data-step]:not(.stp-off){animation:stp-in .24s cubic-bezier(.2,.8,.2,1)}
+@media (prefers-reduced-motion:reduce){#scDlg [data-step]{animation:none!important}#scSteps::after{transition:none}}
+#scSteps::after{content:"";position:absolute;left:0;bottom:-1px;height:2px;width:calc(var(--p,0)*100%);background:var(--accent);transition:width .3s}
+.kind{padding:.8rem .9rem}.kind b{font-size:1.02rem}
+#scOthersBtn{width:100%;border-style:dashed;min-height:2.6rem;margin-top:.4rem}
+#scSum{margin:1rem 0 0}
+#scSum h3{margin:0 0 .4rem}
+.sum{display:flex;gap:.6rem;margin:.25rem 0;font-size:.92rem}
+.sum span{flex:none;width:5.4rem;color:var(--muted)}
+.sum b{font-weight:500;min-width:0;overflow-wrap:anywhere}
+#gMod .lbl{margin-top:.9rem}
+#gMod .kinds{margin:.3rem 0 .8rem}
+#gMod .seg{margin:.3rem 0}
 </style>
 </head>
 <body>
@@ -316,7 +342,7 @@ dialog[open]::backdrop{animation:dlg-fade .25s ease}
 
 <dialog id="setDlg" aria-labelledby="setTitle"><div class="sheet">
   <h2 id="setTitle">Ustawienia</h2>
-  <div class="seg" id="setTabs" role="group" aria-label="Sekcje ustawień"><button data-st="conn">Połączenie</button><button data-st="talk">Rozmowa</button><button data-st="adult">18+</button><button data-st="look">Wygląd</button><button data-st="data">Dane</button></div>
+  <div class="seg" id="setTabs" role="group" aria-label="Sekcje ustawień"><button data-st="conn">Połączenie</button><button data-st="talk">Rozmowa</button><button data-st="look">Wygląd</button><button data-st="data">Dane</button></div>
   <section class="card" data-sec="conn"><h3>Połączenie z Gemini</h3>
         <div class="field"><label for="keyIn" id="keyLbl">Klucz API</label><input id="keyIn" type="password" autocomplete="off"><p class="hint" id="keyHint"></p></div>
     <div class="field"><label for="modelIn">Model</label><div class="inline"><input id="modelIn" list="modelList" autocomplete="off"><button class="btn" id="modelsBtn">Pobierz listę</button></div><datalist id="modelList"></datalist><p class="hint" id="modelHint"></p></div>
@@ -327,16 +353,9 @@ dialog[open]::backdrop{animation:dlg-fade .25s ease}
     <div class="field"><label for="langSel">Język odpowiedzi narratora</label><select id="langSel"><option value="en">English</option><option value="pl">Polski</option></select></div>
     <div class="field"><label for="emoSel">Emocje postaci</label><select id="emoSel"><option value="low">Stonowane</option><option value="natural">Naturalne</option><option value="expressive">Wyraziste</option></select></div>
     <div class="field"><label for="lenSel">Długość odpowiedzi</label><select id="lenSel"><option value="short">Krótsze</option><option value="medium">Średnie</option><option value="long">Dłuższe</option></select></div>
-    <div class="field"><label for="goreSel">Brutalność (gore)</label><select id="goreSel"><option value="off">Łagodna (głównie poza kadrem)</option><option value="medium">Średnia (rany i krew, bez przesady)</option><option value="high">Krwawa (szczegółowy horror)</option></select></div>
     <div class="field"><label for="toneSel">Wulgaryzmy i humor</label><select id="toneSel"><option value="off">Bez przekleństw</option><option value="natural">Naturalnie (przeklinają i żartują)</option><option value="heavy">Ostro (dużo przekleństw)</option></select></div>
     <div class="field"><label for="tempIn">Kreatywność odpowiedzi (0–2)</label><input id="tempIn" type="number" min="0" max="2" step="0.05"><p class="hint">Ok. 0,7 = spójniej. Ok. 1,2 = bardziej zaskakująco.</p></div>
     <div class="field"><label for="thinkSel">Namysł modelu</label><select id="thinkSel"><option value="auto">Domyślny</option><option value="low">Krótki (szybciej)</option><option value="high">Głęboki (logiczniej, wolniej)</option></select><p class="hint">Jeśli model nie obsługuje tej opcji, strona sama ją pominie.</p></div>
-  </section>
-  <section class="card" data-sec="adult"><h3>Treści 18+</h3>
-    <p class="hint">Tylko dla dorosłych użytkowników i dorosłych postaci. Nigdy nie obejmuje nieletnich: zakaz jest wpisany na stałe i żadne ustawienie go nie wyłącza. Działa tylko w scenariuszach, w których podasz wiek swojej postaci (18+) w polu „Wiek”; bez tego narrator zostaje przy scenach bez erotyki.</p>
-    <div class="field"><label for="nsfwSel">Poziom treści erotycznych</label><select id="nsfwSel"><option value="off">Wyłączone (romans bez scen erotycznych)</option><option value="soft">Sugestywne (pożądanie, pocałunki, bez jawnych scen)</option><option value="explicit">Jawne (sceny erotyczne między dorosłymi)</option></select></div>
-    <label class="check"><input type="checkbox" id="ageChk"><span>Mam ukończone 18 lat i chcę włączyć treści dla dorosłych.</span></label>
-    <p class="hint">Model Gemini ma własne filtry Google, więc przy „Jawne" zdarzy się, że część odpowiedzi zostanie zablokowana. Wtedy spróbuj „Ponów" albo złagodź opis sceny.</p>
   </section>
   <section class="card" data-sec="look"><h3>Wygląd</h3>
     <div class="seg" id="themeSeg"><button data-v="light">Jasny</button><button data-v="dark">Ciemny</button><button data-v="auto">Jak telefon</button><button data-v="story">Jak w fabule</button></div>
@@ -361,8 +380,9 @@ dialog[open]::backdrop{animation:dlg-fade .25s ease}
 
 <dialog id="scDlg" aria-labelledby="scTitle"><div class="sheet">
   <h2 id="scTitle">Nowy scenariusz</h2>
-  <div class="field"><label for="scName">Nazwa scenariusza</label><input id="scName" autocomplete="off"></div>
-  <section class="grp" id="scKindRow">
+  <nav id="scSteps" aria-label="Etapy tworzenia"></nav>
+  <div class="field" data-step="type"><label for="scName">Nazwa scenariusza</label><input id="scName" autocomplete="off"></div>
+  <section class="grp" id="scKindRow" data-step="type">
     <h3>Co tworzysz?</h3>
     <div class="kinds" id="scKindSeg">
       <button type="button" class="kind" data-k="world"><b>🌍 Świat</b><span>Bot prowadzi cały świat i wiele postaci naraz: prehistoria, zombie, fantasy, kosmos…</span></button>
@@ -370,7 +390,7 @@ dialog[open]::backdrop{animation:dlg-fade .25s ease}
       <button type="button" class="kind" data-k="from"><b>📺 Serial From</b><span>Postacie ze Stamtąd, z wiedzą do wybranego odcinka.</span></button>
     </div>
   </section>
-  <section class="grp" id="gQuick">
+  <section class="grp" id="gQuick" data-step="type">
     <h3>Szybki start <small>opcjonalnie</small></h3>
     <div id="scPresetRow"><label class="lbl" for="scPreset">Szablon</label><select id="scPreset"></select><p class="hint" id="scPresetHint"></p></div>
     <div id="scTplRow" hidden>
@@ -378,16 +398,18 @@ dialog[open]::backdrop{animation:dlg-fade .25s ease}
       <div class="field"><label for="scIdea">…albo opisz własny pomysł jednym zdaniem</label><div class="inline"><input id="scIdea" autocomplete="off" placeholder="np. świat dinozaurów, miasto wampirów"><button class="btn" id="scGen" type="button">Rozwiń</button></div><p class="hint" id="scGenMsg" role="status">Model wypełni resztę pól. Potem możesz wszystko poprawić.</p></div>
     </div>
   </section>
-  <section class="grp" id="gWorld" hidden>
+  <section class="grp" id="gWorld" data-step="world" hidden>
     <h3 id="scWorldH">Świat</h3><p class="sub" id="scWorldSub"></p>
     <textarea id="scWorld" placeholder="Gdzie i kiedy się to dzieje, jakie tam rządzą zasady."></textarea>
   </section>
-  <section class="grp" id="gCast" hidden>
+  <section class="grp" id="gCast" data-step="cast" hidden>
     <h3 id="scCastH">Postacie</h3><p class="sub" id="scCastSub"></p>
     <div id="scMain">
       <div class="field"><label for="scCharName">Imię</label><input id="scCharName" autocomplete="off" placeholder="np. Aria Nightshade"></div>
       <div class="field"><label for="scCharDesc">Osobowość, wygląd, sposób mówienia</label><textarea id="scCharDesc" placeholder="Charakter, jak mówi, jak wygląda, czego chce, do kogo się zwraca."></textarea></div>
     </div>
+    <button class="btn" id="scOthersBtn" type="button" hidden>＋ Dodaj inne postacie do rozmowy</button>
+    <div id="scOthers">
     <div class="castbar"><span class="lbl" id="scCastLbl"></span><span class="hint" id="scCastN"></span></div>
     <div id="scCast"></div>
     <div class="actions castacts"><button class="btn" id="scCastAdd" type="button">＋ Dodaj postać</button><button class="btn" id="scCastPaste" type="button">📋 Wklej listę</button><button class="btn ghost" id="scCastFold" type="button" hidden>Zwiń wszystkie</button></div>
@@ -397,14 +419,15 @@ dialog[open]::backdrop{animation:dlg-fade .25s ease}
       <p class="hint" id="scPasteN" role="status"></p>
       <div class="actions"><button class="btn primary" id="scPasteGo" type="button" disabled>Dodaj</button><button class="btn" id="scPasteClip" type="button">Wklej ze schowka</button><button class="btn ghost" id="scPasteX" type="button">Zamknij</button></div>
     </div>
+    </div>
   </section>
-  <section class="grp" id="gYou">
+  <section class="grp" id="gYou" data-step="you">
     <h3>Ty</h3>
     <div class="field"><label for="scPlayer">Imię twojej postaci</label><input id="scPlayer" autocomplete="off" placeholder="Puste: postać przedstawi się sama"></div>
     <div class="field"><label for="scAge">Wiek twojej postaci (treści 18+ działają tylko od 18)</label><input id="scAge" type="number" min="1" max="120" inputmode="numeric"></div>
     <div class="field"><label for="scStory" id="scStoryLbl">Kim jest twoja postać</label><textarea id="scStory"></textarea></div>
   </section>
-  <section class="grp" id="gStart">
+  <section class="grp" id="gStart" data-step="start">
     <h3>Początek</h3>
     <div class="field"><label for="scOpen">Scena otwierająca</label><textarea id="scOpen" placeholder="Co dzieje się na początku? Puste: narrator wymyśli."></textarea></div>
     <div id="scStartOnly">
@@ -418,14 +441,33 @@ dialog[open]::backdrop{animation:dlg-fade .25s ease}
       <div class="field"><span class="lbl">Pora dnia</span><div class="seg" id="scTimeC"><button type="button" data-time="day">Dzień</button><button type="button" data-time="night">Noc</button></div></div>
     </div>
   </section>
-  <details class="grp" id="gAdv">
+  <div class="field" id="scNotesRow" data-step="start"><label for="scNotes" id="scNotesLbl">Dodatkowe zasady dla narratora (opcjonalnie)</label><textarea id="scNotes"></textarea></div>
+  <section class="grp" id="gMod" data-step="mod">
+    <h3>Treści</h3><p class="sub">Ustawienia tylko dla tego scenariusza. Zmienisz je w każdej chwili w edycji.</p>
+    <input type="hidden" id="scNsfw" value="off"><input type="hidden" id="scGore" value="medium">
+    <span class="lbl">Brutalność</span>
+    <div class="seg" id="scGoreSeg"><button type="button" data-v="off">Łagodna</button><button type="button" data-v="medium">Średnia</button><button type="button" data-v="high">Krwawa</button></div>
+    <p class="hint" id="scGoreHint"></p>
+    <span class="lbl">Treści 18+</span>
+    <div class="kinds" id="scNsfwSeg">
+      <button type="button" class="kind" data-v="off"><b>🚫 Wyłączone</b><span>Romans bez scen erotycznych.</span></button>
+      <button type="button" class="kind" data-v="soft"><b>💬 Romantyczne</b><span>Pożądanie, flirt, pocałunki. Sceny urywają się przed aktem.</span></button>
+      <button type="button" class="kind" data-v="sensual"><b>🔥 Zmysłowe</b><span>Dotyk, ciała i napięcie opisane gorąco, bez anatomicznych szczegółów.</span></button>
+      <button type="button" class="kind" data-v="explicit"><b>🔞 Jawne</b><span>Pełne sceny erotyczne między dorosłymi, bez cenzury.</span></button>
+    </div>
+    <p class="hint" id="scModWarn" role="status"></p>
+    <label class="check" id="scAgeRow" hidden><input type="checkbox" id="scAgeChk"><span>Mam ukończone 18 lat i chcę treści dla dorosłych.</span></label>
+    <p class="hint">Tylko dla dorosłych postaci. Zakaz treści z udziałem nieletnich jest wpisany na stałe i żadne ustawienie go nie wyłącza.</p>
+  </section>
+  <div class="card" id="scSum" data-step="mod" hidden></div>
+  <details class="grp" id="gAdv" data-step="adv">
     <summary>Zaawansowane</summary>
-    <div class="field"><label for="scNotes">Dodatkowe zasady dla narratora (opcjonalnie)</label><textarea id="scNotes" placeholder="np. nikt nie ma broni palnej; w tym świecie nie ma magii"></textarea></div>
+    
     <div class="field" id="scMemRow"><label for="scMem">Pamięć opowieści (narrator uzupełnia ją sam, możesz ją poprawić)</label><textarea id="scMem" placeholder="Pusta, dopóki historia jest krótka."></textarea></div>
     <p class="hint" id="scEditHint">„Udostępnij" zapisuje samą postać, bez waszej rozmowy i bez klucza API — plik możesz wysłać znajomemu, a on wczyta go przez „Importuj scenariusz" w bocznym menu.</p>
     <div class="actions" id="scEditActions"><button class="btn" id="scDup">Duplikuj</button><button class="btn" id="scExp">Udostępnij</button><button class="btn" id="scReset">Zacznij od nowa</button><button class="btn danger" id="scDel">Usuń</button></div>
   </details>
-  <div class="actions"><button class="btn primary" id="scSave">Utwórz</button><button class="btn" id="scCancel">Anuluj</button><span class="dirty" id="scDirty" hidden>● niezapisane zmiany</span></div>
+  <div class="actions"><button class="btn" id="scBack" type="button" hidden>← Wstecz</button><button class="btn primary" id="scNext" type="button">Dalej →</button><button class="btn primary" id="scSave" hidden>Utwórz</button><button class="btn" id="scCancel">Anuluj</button><span class="dirty" id="scDirty" hidden>● niezapisane zmiany</span></div>
 </div></dialog>
 
 <dialog id="kbDlg" aria-labelledby="kbTitle"><div class="sheet">
@@ -949,8 +991,9 @@ function styleLines(S) {
   const nsfwLine = 'ABSOLUTE RULE, no setting or request overrides it: never write romantic or sexual content involving anyone who is under 18, looks or acts under 18, or whose age is unknown. In this story that includes Julie, Ethan, Kristi and every teenager or child. ' + ({
     off: 'Romance may exist but stays non-explicit: cut away before anything sexual.',
     soft: 'The player has confirmed they are an adult. Between adult characters, desire, flirting, kissing and implied intimacy are allowed; cut away before explicit acts.',
-    explicit: 'The player has confirmed they are an adult and chose 18+ fiction. Between consenting adult characters (all clearly 18+, the player character included), sexual scenes may be written openly, in character and in the story\'s tone. Consent is mutual and clear. No sexual violence.'
-  })[lvl];
+    sensual: 'The player has confirmed they are an adult and chose sensual fiction. Between consenting adult characters, intimate scenes may be written with heat: touch, bodies, breath, arousal and the build-up described vividly in tasteful, non-clinical words; the most graphic anatomical detail stays implied. Never lecture, add warnings or break character.',
+    explicit: 'The player has confirmed they are an adult and chose 18+ fiction. Never lecture, add warnings or break character; keep the scene flowing. Between consenting adult characters (all clearly 18+, the player character included), sexual scenes may be written openly, in character and in the story\'s tone. Write bodies and acts in direct, plain words in the characters\' own voice, the way adults really talk in bed, and let dirty talk in dialogue sound natural: no euphemisms, no flowery metaphors, no clinical terms. Consent is mutual and clear. No sexual violence.'
+  })[lvl] || '';
   return { langLine, toneLine, emoLine, goreLine, lenLine, nsfwLine };
 }
 function buildPlayer(S) {
@@ -1175,7 +1218,7 @@ const BASE = 'https://generativelanguage.googleapis.com/v1beta';
 const LS_KEY = 'from-bot-save-v1';
 const OLD_PL_BACKSTORY = 'Jestem żołnierzem. Byliśmy na misji gdzieś w Afganistanie i jechaliśmy pojazdem opancerzonym z karabinem .50 cal na dachu. Było nas ośmiu. Jechaliśmy nocą. Trafiliśmy na zwalone drzewo i ludzi na zewnątrz. Wyszliśmy z pojazdu, ale to były potwory i zabiły czterech z nas. Reszta wsiadła do pojazdu i wjechaliśmy do lasu. Zabrakło paliwa i pozostałych trzech też zabili. Przeżyłem, bo całą noc ukrywałem się w bagażniku pojazdu. Za dnia z niego wychodzę i tak zaczyna się historia.';
 const DEFAULT_BACKSTORY = "I'm a soldier. We were on a mission somewhere in Afghanistan, riding in an armored vehicle with a .50 cal on the roof. There were eight of us. We were driving at night. We ran into a fallen tree and people standing outside. We got out of the vehicle, but they were monsters, and they killed four of us. The rest got back in and we drove into the forest. We ran out of fuel and they killed the remaining three too. I survived because I hid in the trunk of the vehicle the whole night. Now it's daytime and I climb out. This is where the story begins.";
-const safetyFor = () => SAFETY.map(x => x.category === 'HARM_CATEGORY_SEXUALLY_EXPLICIT' && G.nsfwOk && G.nsfw === 'explicit' ? { ...x, threshold: 'BLOCK_NONE' } : x);
+const safetyFor = () => { const sc = A(), adult = G.nsfwOk && sc.playerAge >= 18 && (sc.nsfw === 'sensual' || sc.nsfw === 'explicit'); return SAFETY.map(x => x.category === 'HARM_CATEGORY_SEXUALLY_EXPLICIT' && adult ? { ...x, threshold: 'BLOCK_NONE' } : x.category === 'HARM_CATEGORY_DANGEROUS_CONTENT' && sc.gore === 'high' ? { ...x, threshold: 'BLOCK_NONE' } : x); };
 const SAFETY = ['HARM_CATEGORY_HARASSMENT', 'HARM_CATEGORY_HATE_SPEECH', 'HARM_CATEGORY_SEXUALLY_EXPLICIT', 'HARM_CATEGORY_DANGEROUS_CONTENT'].map(c => ({ category: c, threshold: 'BLOCK_ONLY_HIGH' }));
 
 const SOLDIER_OPENING = 'It is daylight; the player has spent the whole night hidden in the trunk of the abandoned armored vehicle and now climbs out. Show the vehicle out of fuel among the trees, the silence, the bodies of the three comrades (restrained, not gratuitous), the practical situation, and the first sensory hints that this place is wrong. Do not bring any named character on stage yet.';
@@ -1198,9 +1241,9 @@ const PRESETS = {
     backstory: '', opening: '', notes: '', point: 2, time: 'day', location: '', present: [], focus: '' }
 };
 
-const GLOBAL_KEYS = ['apiKey', 'model', 'provider', 'keys', 'models', 'theme', 'oled', 'gore', 'emo', 'len', 'ctx', 'usage', 'think', 'lastBackup', 'temperature', 'lang', 'tone', 'nsfw', 'nsfwOk', 'kbOverride'];
+const GLOBAL_KEYS = ['apiKey', 'model', 'provider', 'keys', 'models', 'theme', 'oled', 'emo', 'len', 'ctx', 'usage', 'think', 'lastBackup', 'temperature', 'lang', 'tone', 'nsfwOk', 'kbOverride'];
 const uid = () => 's' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
-const newScenario = (over = {}) => ({ id: uid(), name: 'Nowy scenariusz', playerName: '', playerAge: 0, backstory: '', opening: '', notes: '', kind: 'from', point: 2, time: 'day', location: '', present: [], focus: '', charName: '', charDesc: '', world: '', others: [], mode: 'person', cast: [], messages: [], summary: '', summaryUpTo: 0, journal: [], pins: [], memAt: 0, memUndo: null, deadNow: [], chapters: [], chapterAt: 0, chapterUndo: null, created: Date.now(), updated: Date.now(), ...over });
+const newScenario = (over = {}) => ({ id: uid(), name: 'Nowy scenariusz', playerName: '', playerAge: 0, nsfw: 'off', gore: 'medium', backstory: '', opening: '', notes: '', kind: 'from', point: 2, time: 'day', location: '', present: [], focus: '', charName: '', charDesc: '', world: '', others: [], mode: 'person', cast: [], messages: [], summary: '', summaryUpTo: 0, journal: [], pins: [], memAt: 0, memUndo: null, deadNow: [], chapters: [], chapterAt: 0, chapterUndo: null, created: Date.now(), updated: Date.now(), ...over });
 const fromPreset = k => { const p = PRESETS[k]; return newScenario({ name: p.name, backstory: p.backstory, opening: p.opening, notes: p.notes, point: p.point, time: p.time, location: p.location, present: p.present.slice(), focus: p.focus }); };
 
 let G = { ver: 3, apiKey: '', model: 'gemini-3.5-flash-lite', provider: 'gemini', keys: null, models: null, theme: 'auto', oled: false, gore: 'medium', emo: 'expressive', len: 'medium', ctx: 'auto', usage: { day: '', n: 0, left: null }, think: 'auto', lastBackup: 0, temperature: 0.85, lang: 'en', tone: 'natural', nsfw: 'off', nsfwOk: false, kbOverride: null, activeId: null };
@@ -1209,7 +1252,7 @@ let SC = [];
   let raw = {};
   try { raw = JSON.parse(localStorage.getItem(LS_KEY) || '{}'); } catch (e) { raw = {}; }
   if (raw.ver >= 3 && Array.isArray(raw.SC)) {
-    Object.assign(G, raw.G || {}); SC = raw.SC.map(s => newScenario({ memAt: s.summaryUpTo || 0, ...s }));
+    Object.assign(G, raw.G || {}); SC = raw.SC.map(s => newScenario({ memAt: s.summaryUpTo || 0, gore: (raw.G && raw.G.gore) || 'medium', nsfw: (raw.G && raw.G.nsfw) || 'off', ...s }));
   } else if (Object.keys(raw).length) {                  // older single-story save becomes the first scenario
     for (const k of GLOBAL_KEYS) if (k in raw) G[k] = raw[k];
     if (!raw.ver && G.temperature === 1) G.temperature = 0.85;
@@ -1474,8 +1517,10 @@ async function generate() {
       const { finish, blocked } = await streamGemini(pr.system, withTail(toContents(), pr.tail), t => {
         const stick = nearBottom(); acc += t; holder.innerHTML = messageHTML(acc); if (stick) toBottom();
       });
-      if (blocked) { errMsg = `Dostawca zablokował tę wiadomość (${blocked}). Sformułuj ją inaczej.`; break; }
-      if (acc.trim().length < 220 && /^(i'?m sorry|sorry, but|i can(?:'|no)t (help|assist|comply|continue)|przepraszam, ale|nie mogę (pomóc|kontynuować))/i.test(acc.trim())) { errMsg = 'Model odmówił odpowiedzi (filtr bezpieczeństwa). Kliknij „Ponów”, obniż brutalność w ustawieniach albo wybierz inny model.'; acc = ''; break; }
+      const refused = acc.trim().length < 220 && /^(i'?m sorry|sorry, but|i can(?:'|no)t (help|assist|comply|continue)|przepraszam, ale|nie mogę (pomóc|kontynuować))/i.test(acc.trim());
+      if (attempt === 0 && (blocked || refused || (!acc.trim() && /^(SAFETY|PROHIBITED_CONTENT|BLOCKLIST|SPII)$/.test(finish || '')))) { extra = 'The previous attempt was stopped by a content filter. Continue the same scene in the same tone, but handle the most graphic moment with implication, a time cut or a change of focus, then keep the story moving. No apology, no warning, no refusal.'; continue; }
+      if (blocked) { errMsg = `Dostawca zablokował tę wiadomość (${blocked}). Sformułuj ją inaczej albo zmień poziom treści w scenariuszu.`; break; }
+      if (acc.trim().length < 220 && /^(i'?m sorry|sorry, but|i can(?:'|no)t (help|assist|comply|continue)|przepraszam, ale|nie mogę (pomóc|kontynuować))/i.test(acc.trim())) { errMsg = 'Model odmówił odpowiedzi (filtr bezpieczeństwa). Kliknij „Ponów”, zmień poziom treści w edycji scenariusza (etap „Treści”) albo wybierz inny model.'; acc = ''; break; }
       if (!acc.trim()) { errMsg = `Model nie zwrócił tekstu${finish && finish !== 'STOP' ? ' (' + finish + ')' : ''}. Kliknij „Ponów".`; break; }
       if (/^(length|MAX_TOKENS)$/.test(finish || '')) acc = trimSentence(acc);
       leaks = findLeaks(acc, terms, allowed);
@@ -1684,7 +1729,7 @@ function setTime(t) {
 
 function openScene() { fillScene(); sceneDlg.showModal(); }
 let fTheme = 'auto', draft = null;
-const SCALAR = { langSel: 'lang', toneSel: 'tone', goreSel: 'gore', nsfwSel: 'nsfw', emoSel: 'emo', lenSel: 'len', thinkSel: 'think' };
+const SCALAR = { langSel: 'lang', toneSel: 'tone', emoSel: 'emo', lenSel: 'len', thinkSel: 'think' };
 const LBL = { key: 'Klucz API', model: 'Model', theme: 'Motyw', oled: 'Czysta czerń', lang: 'Język', tone: 'Wulgaryzmy', gore: 'Brutalność', nsfw: 'Treści 18+', nsfwOk: 'Potwierdzenie 18+', emo: 'Emocje', len: 'Długość', think: 'Namysł modelu', temperature: 'Kreatywność' };
 const setSeg = (id, v) => document.querySelectorAll('#' + id + ' button').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.v === v)));
 function fillProv() {
@@ -1704,20 +1749,19 @@ function showSetTab(t) {
 function fillSet() {
   draft = { key: G.keys.gemini || '', model: G.models.gemini || 'gemini-3.5-flash-lite' }; fTheme = G.theme;
   for (const id in SCALAR) $('#' + id).value = G[SCALAR[id]];
-  $('#ageChk').checked = !!G.nsfwOk; $('#tempIn').value = G.temperature; $('#oledChk').checked = !!G.oled; setSeg('themeSeg', fTheme); fillProv();
+  $('#tempIn').value = G.temperature; $('#oledChk').checked = !!G.oled; setSeg('themeSeg', fTheme); fillProv();
   $('#usage').textContent = usageText();
   $('#kbInfo').textContent = `${S.kbOverride ? 'Własna baza' : 'Domyślna baza'}: ${KB.eps.length} odcinków, ${KB.chars.length} sekcji postaci.`;
   $('#appVer').textContent = 'Wersja: ' + APP_VERSION + (navigator.serviceWorker && navigator.serviceWorker.controller ? ' · zainstalowana jako aplikacja' : ' · otwarta w przeglądarce');
   refreshDirty();
 }
-function openSet() { fillSet(); let t = 'conn'; try { t = sessionStorage.getItem(SEC_KEY) || 'conn'; } catch (e) {} showSetTab(t); setDlg.showModal(); }
+function openSet() { fillSet(); let t = 'conn'; try { t = sessionStorage.getItem(SEC_KEY) || 'conn'; } catch (e) {} if (!document.querySelector('#setTabs [data-st="' + t + '"]')) t = 'conn'; showSetTab(t); setDlg.showModal(); }
 function changes() {
   const c = [], t = parseFloat($('#tempIn').value);
   if (draft.key !== (G.keys.gemini || '')) c.push('key');
   if (draft.model !== (G.models.gemini || '')) c.push('model');
   if (fTheme !== G.theme) c.push('theme');
   if ($('#oledChk').checked !== !!G.oled) c.push('oled');
-  if ($('#ageChk').checked !== !!G.nsfwOk) c.push('nsfwOk');
   for (const id in SCALAR) if ($('#' + id).value !== G[SCALAR[id]]) c.push(SCALAR[id]);
   if (!isNaN(t) && t !== G.temperature) c.push('temperature');
   return c;
@@ -1725,15 +1769,13 @@ function changes() {
 function refreshDirty() { const n = changes().length; $('#setSave').disabled = !n; $('#dirtyMsg').hidden = !n; }
 function saveSettings() {
   const ch = changes(); if (!ch.length) { toast('Nic się nie zmieniło.'); return; }
-  if ($('#nsfwSel').value !== 'off' && !$('#ageChk').checked) { showSetTab('adult'); toast('Aby włączyć treści 18+, potwierdź pełnoletność.', 'err'); return; }
-  G.nsfwOk = $('#ageChk').checked;
   const t = parseFloat($('#tempIn').value);
   G.keys = { ...G.keys, gemini: draft.key }; G.models = { ...G.models, gemini: draft.model || 'gemini-3.5-flash-lite' }; G.theme = fTheme; G.oled = $('#oledChk').checked;
   for (const id in SCALAR) G[SCALAR[id]] = $('#' + id).value;
   G.temperature = isNaN(t) ? 1 : Math.min(2, Math.max(0, t));
   save(); applyTheme(); refreshFocus(); renderLog();
   let ok = false;
-  try { const r = JSON.parse(localStorage.getItem(LS_KEY)); ok = r.G.models.gemini === G.models.gemini && r.G.keys.gemini === G.keys.gemini && r.G.theme === G.theme && r.G.gore === G.gore && r.G.len === G.len && r.G.emo === G.emo && r.G.think === G.think; } catch (e) {}
+  try { const r = JSON.parse(localStorage.getItem(LS_KEY)); ok = r.G.models.gemini === G.models.gemini && r.G.keys.gemini === G.keys.gemini && r.G.theme === G.theme && r.G.len === G.len && r.G.emo === G.emo && r.G.think === G.think; } catch (e) {}
   if (ok) toast(`Zapisano i sprawdzono: ${ch.map(k => LBL[k]).join(', ')}. Aktywne: Gemini · ${G.models.gemini}.`, 'ok'); else toast('Nie udało się zapisać w przeglądarce (brak miejsca lub zablokowany zapis).', 'err');
   $('#usage').textContent = usageText(); refreshDirty();
 }
@@ -2011,6 +2053,7 @@ function renderCast() {
     box.appendChild(d);
   });
   if (!scCast.length) box.innerHTML = '<p class="hint">Na razie nikogo. Możesz zostawić puste — narrator wymyśli ludzi sam — albo wkleić całą listę przyciskiem poniżej.</p>';
+  scOthersUI();
 }
 function renderTpl() {
   const box = $('#scTpl'); box.innerHTML = '';
@@ -2019,12 +2062,59 @@ function renderTpl() {
 function scApplyTpl(t) {
   $('#scName').value = t.name; $('#scWorld').value = t.world; $('#scOpen').value = t.open; $('#scLocC').value = t.loc || ''; scSetTime(t.time || 'day', '#scTimeC');
   if (scMode === 'person') { $('#scCharName').value = t.who; $('#scCharDesc').value = t.desc; }
-  scCast = (t.cast || []).map(c => ({ name: c[0], desc: c[1], start: scMode === 'person', _open: false })); renderCast(); fitAll();
+  scCast = (t.cast || []).map(c => ({ name: c[0], desc: c[1], start: scMode === 'person', _open: false })); renderCast(); fitAll(); toast('Szablon wczytany. Kliknij Dalej, żeby go przejrzeć i poprawić.', 'ok');
 }
 function scClear() {
   for (const id of ['scName', 'scPlayer', 'scStory', 'scOpen', 'scNotes', 'scCharName', 'scCharDesc', 'scWorld', 'scLocC', 'scIdea']) $('#' + id).value = '';
   scCast = []; renderCast(); scSetTime('day', '#scTimeC');
 }
+const SC_LBL = { type: 'Typ', world: 'Świat', cast: 'Postacie', you: 'Ty', start: 'Początek', mod: 'Treści', adv: 'Więcej' };
+let scCur = 'type', scList = ['type'], scOthersOn = false;
+function scBuildSteps() {
+  scList = scType === 'from' ? ['type', 'you', 'start', 'mod'] : scType === 'world' ? ['type', 'world', 'cast', 'you', 'start', 'mod'] : ['type', 'cast', 'you', 'start', 'mod'];
+  if (scEditId) scList.push('adv');
+  if (!scList.includes(scCur)) scCur = scList[0];
+  scStepUI();
+}
+function scOthersUI() {
+  const w = scType === 'world', show = w || scOthersOn || scCast.some(c => !c._gone);
+  $('#scOthers').hidden = !show; $('#scOthersBtn').hidden = w || show;
+}
+function scNextLbl() { const e = scCur === 'you' && !$('#scPlayer').value.trim() && !$('#scStory').value.trim(); $('#scNext').textContent = e ? 'Pomiń →' : 'Dalej →'; }
+function scSummary() {
+  const box = $('#scSum'); box.hidden = !!scEditId || scCur !== 'mod'; if (box.hidden) return;
+  const v = id => $('#' + id).value.trim(), names = scCast.filter(c => !c._gone && c.name.trim()).map(c => c.name.trim());
+  const rows = [['Nazwa', v('scName') || 'Nowy scenariusz'], ['Typ', scType === 'from' ? 'Serial From' : scType === 'world' ? 'Świat' : 'Zwykła postać']];
+  if (scType === 'person') rows.push(['Postać', v('scCharName') || 'Postać']);
+  if (scType === 'world') rows.push(['Świat', v('scWorld').slice(0, 80) || 'narrator wymyśli']);
+  if (scType !== 'from' && names.length) rows.push([scType === 'world' ? 'Postacie' : 'Inni', names.join(', ')]);
+  rows.push(['Ty', v('scPlayer') || 'przedstawisz się w grze']);
+  rows.push(['Treści', 'brutalność: ' + ({ off: 'łagodna', medium: 'średnia', high: 'krwawa' })[v('scGore')] + ' · 18+: ' + ({ off: 'wyłączone', soft: 'romantyczne', sensual: 'zmysłowe', explicit: 'jawne' })[v('scNsfw')]]);
+  box.innerHTML = '<h3>Podsumowanie</h3>' + rows.map(r => `<p class="sum"><span>${r[0]}</span><b>${escHtml(r[1])}</b></p>`).join('');
+}
+function scStepUI() {
+  const edit = !!scEditId, i = scList.indexOf(scCur), last = i === scList.length - 1, nav = $('#scSteps');
+  nav.style.setProperty('--p', (i + 1) / scList.length);
+  nav.innerHTML = scList.map((k, n) => { const lb = k === 'type' && edit ? 'Nazwa' : (k === 'cast' && scType !== 'world' ? 'Postać' : SC_LBL[k]); return `<button type="button" data-k="${k}" aria-label="${n + 1}. ${lb}"${k === scCur ? ' aria-current="step"' : ''}><i>${n + 1}</i><span>${lb}</span></button>`; }).join('');
+  scDlg.querySelectorAll('[data-step]').forEach(e => e.classList.toggle('stp-off', e.dataset.step !== scCur));
+  $('#gAdv').open = true;
+  $('#scBack').hidden = edit || i === 0; $('#scNext').hidden = edit || last; $('#scSave').hidden = !edit && !last;
+  scOthersUI(); scSummary(); scNextLbl(); scModUI();
+  scDlg.querySelector('.sheet').scrollTop = 0; fitAll();
+}
+function scGoTo(k) { scDlg.style.setProperty('--dir', scList.indexOf(k) < scList.indexOf(scCur) ? -1 : 1); scCur = k; scStepUI(); }
+const GORE_HINT = { off: 'Przemoc jest, ale głównie poza kadrem.', medium: 'Rany i krew pokazane uczciwie, bez przesady.', high: 'Szczegółowy horror: rany, krew, rozkład.' };
+function scModUI() {
+  const n = $('#scNsfw').value, g = $('#scGore').value, age = parseInt($('#scAge').value, 10) || 0;
+  document.querySelectorAll('#scNsfwSeg .kind').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.v === n)));
+  document.querySelectorAll('#scGoreSeg button').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.v === g)));
+  $('#scGoreHint').textContent = GORE_HINT[g] || '';
+  $('#scAgeRow').hidden = n === 'off';
+  $('#scModWarn').textContent = n !== 'off' && age < 18 ? 'Wymaga wieku twojej postaci od 18 lat. Wpisz go w kroku „Ty”, inaczej narrator zostanie przy scenach bez erotyki.' : '';
+}
+document.querySelectorAll('#scNsfwSeg .kind').forEach(b => b.onclick = () => { $('#scNsfw').value = b.dataset.v; scModUI(); scRefreshDirty(); });
+document.querySelectorAll('#scGoreSeg button').forEach(b => b.onclick = () => { $('#scGore').value = b.dataset.v; scModUI(); scRefreshDirty(); });
+$('#scOthersBtn').onclick = () => { scOthersOn = true; scOthersUI(); $('#scCastAdd').click(); };
 function scLayout() {
   const from = scType === 'from', world = scType === 'world', edit = !!scEditId;
   $('#scKindRow').hidden = edit; $('#gQuick').hidden = edit; $('#scPresetRow').hidden = !from; $('#scTplRow').hidden = from;
@@ -2038,6 +2128,10 @@ function scLayout() {
   $('#scCastLbl').textContent = world ? '' : 'Inne postacie (opcjonalnie)';
   $('#scStoryLbl').textContent = from ? 'Kim jest twoja postać (najlepiej po angielsku)' : 'Kim jesteś w tej historii (opcjonalnie — narrator dopyta w grze)';
   document.querySelectorAll('#scKindSeg button').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.k === scType)));
+  $('#gWorld').dataset.step = world ? 'world' : 'start'; $('#scNotesRow').dataset.step = world ? 'world' : 'start';
+  $('#scNotesLbl').textContent = world ? 'Dodatkowe zasady świata dla narratora (opcjonalnie)' : from ? 'Dodatkowe zasady dla narratora (opcjonalnie)' : 'Wskazówki dla postaci (opcjonalnie)';
+  $('#scNotes').placeholder = world ? 'np. nikt nie ma broni palnej; w tym świecie nie ma magii' : from ? 'np. mniej o fabule, więcej o emocjach' : 'np. odpowiada krótko, żartuje, nie przeklina';
+  scBuildSteps();
 }
 function scSetKind(k) {
   scType = k; scKind = k === 'from' ? 'from' : 'custom'; scMode = k === 'world' ? 'world' : 'person';
@@ -2053,7 +2147,7 @@ function scApplyPreset(k) {
 }
 function openScenarioDialog(id) {
   const sc = id ? SC.find(s => s.id === id) : null;
-  scEditId = sc ? sc.id : null;
+  scEditId = sc ? sc.id : null; scCur = 'type'; scOthersOn = false; $('#scNsfw').value = sc ? (sc.nsfw || 'off') : 'off'; $('#scGore').value = sc ? (sc.gore || 'medium') : 'medium'; $('#scAgeChk').checked = !!G.nsfwOk;
   $('#scTitle').textContent = sc ? 'Edytuj scenariusz' : 'Nowy scenariusz';
   $('#scSave').textContent = sc ? 'Zapisz' : 'Utwórz';
   $('#scPoint').innerHTML = KB.eps.map(e => `<option value="${e.idx}">${epName(e)}</option>`).join('');
@@ -2068,10 +2162,13 @@ function openScenarioDialog(id) {
     $('#scPreset').value = 'julie'; $('#scAge').value = ''; $('#scGenMsg').textContent = 'Model wypełni resztę pól. Potem możesz wszystko poprawić.';
     scSetKind('world');
   }
-  scDlg.showModal(); $('#scPastePanel').hidden = true; scDlg.querySelector('.sheet').scrollTop = 0; fitAll(); scSnap = scVals(); refreshDirty();
+  scDlg.showModal(); $('#scPastePanel').hidden = true; scDlg.querySelector('.sheet').scrollTop = 0; fitAll(); scSnap = scVals(); scRefreshDirty();
 }
 $('#newScBtn').onclick = () => openScenarioDialog(null);
-document.querySelectorAll('#scKindSeg button').forEach(b => b.onclick = () => scSetKind(b.dataset.k));
+document.querySelectorAll('#scKindSeg button').forEach(b => b.onclick = () => { if (b.dataset.k !== scType && scDirty() && !confirm('Zmiana typu wyczyści wpisane pola. Zmienić?')) return; scSetKind(b.dataset.k); });
+$('#scSteps').onclick = e => { const b = e.target.closest('button[data-k]'); if (b) scGoTo(b.dataset.k); };
+$('#scBack').onclick = () => scGoTo(scList[Math.max(0, scList.indexOf(scCur) - 1)]);
+$('#scNext').onclick = () => scGoTo(scList[Math.min(scList.length - 1, scList.indexOf(scCur) + 1)]);
 document.querySelectorAll('#scTimeC button').forEach(b => b.onclick = () => scSetTime(b.dataset.time, '#scTimeC'));
 $('#scPreset').onchange = e => scApplyPreset(e.target.value);
 $('#scPoint').onchange = e => { scDraft.point = +e.target.value; scChips(); };
@@ -2098,17 +2195,22 @@ $('#scGen').onclick = async () => {
     else { $('#scCharName').value = j.name || ''; $('#scCharDesc').value = j.description || ''; $('#scWorld').value = j.world || ''; }
     if (j.opening) $('#scOpen').value = j.opening;
     if (!$('#scName').value) $('#scName').value = j.name || '';
-    say('Gotowe. Sprawdź i popraw, co chcesz.'); fitAll(); refreshDirty();
+    say('Gotowe. Kliknij Dalej i sprawdź, co wyszło.'); fitAll(); scRefreshDirty();
   } catch (e) { say('Nie udało się: ' + ((e && e.message) || 'nieznany błąd') + '. Spróbuj jeszcze raz.'); }
   b.disabled = false; b.textContent = 'Rozwiń';
 };
 $('#scSave').onclick = () => {
-  const f = { name: $('#scName').value.trim() || 'Nowy scenariusz', playerName: $('#scPlayer').value.trim(), playerAge: Math.max(0, parseInt($('#scAge').value, 10) || 0), backstory: $('#scStory').value.trim(), opening: $('#scOpen').value.trim(), notes: $('#scNotes').value.trim() };
+  if ($('#scNsfw').value !== 'off') {
+    if (!$('#scAgeChk').checked) { scGoTo('mod'); toast('Aby włączyć treści 18+, potwierdź, że masz 18 lat.', 'err'); return; }
+    if ((parseInt($('#scAge').value, 10) || 0) < 18) { scGoTo('you'); toast('Treści 18+ wymagają wieku twojej postaci od 18 lat. Wpisz go tutaj.', 'err'); return; }
+    G.nsfwOk = true;
+  }
+  const f = { nsfw: $('#scNsfw').value, gore: $('#scGore').value, name: $('#scName').value.trim() || 'Nowy scenariusz', playerName: $('#scPlayer').value.trim(), playerAge: Math.max(0, parseInt($('#scAge').value, 10) || 0), backstory: $('#scStory').value.trim(), opening: $('#scOpen').value.trim(), notes: $('#scNotes').value.trim() };
   let cu = null;
   if (scKind === 'custom') {
     const live = scCast.filter(c => !c._gone), nameless = live.find(c => !c.name.trim() && c.desc.trim());
     if (nameless) {
-      nameless._open = true; renderCast(); fitAll();
+      nameless._open = true; scGoTo('cast'); renderCast(); fitAll();
       const el = $('#scCast').children[scCast.indexOf(nameless)];
       if (el) { el.scrollIntoView({ block: 'center' }); el.querySelector('.cc-body input:not([type=checkbox])').focus({ preventScroll: true }); }
       toast('Ta postać ma opis, ale nie ma imienia.'); return;
@@ -2116,9 +2218,9 @@ $('#scSave').onclick = () => {
     const cast = live.map(c => ({ name: c.name.trim(), desc: c.desc.trim(), start: !!c.start })).filter(c => c.name);
     const seen = new Set(scMode === 'person' ? [($('#scCharName').value.trim() || 'Postać').toLowerCase()] : []);
     const dup = cast.find(c => { const k = c.name.toLowerCase(); if (seen.has(k)) return true; seen.add(k); return false; });
-    if (dup) { toast('Dwie postacie mają to samo imię: „' + dup.name + '”. Zmień jedno z nich.'); return; }
+    if (dup) { scGoTo('cast'); toast('Dwie postacie mają to samo imię: „' + dup.name + '”. Zmień jedno z nich.'); return; }
     const w = scMode === 'world', world = $('#scWorld').value.trim();
-    if (w && !world && !cast.length) { toast('Opisz świat albo dodaj choć jedną postać.'); return; }
+    if (w && !world && !cast.length) { scGoTo('world'); toast('Opisz świat albo dodaj choć jedną postać.'); return; }
     cu = { kind: 'custom', mode: scMode, charName: w ? '' : ($('#scCharName').value.trim() || 'Postać'), charDesc: w ? '' : $('#scCharDesc').value.trim(), world, cast, others: cast.map(c => c.name) };
   }
   if (scEditId) {
@@ -2177,13 +2279,13 @@ $('#scImport').onchange = async e => {
 let scSnap = '';
 function scVals() { return JSON.stringify([[...scDlg.querySelectorAll('input:not(#scIdea):not(.nosnap),textarea:not(.nosnap),select')].map(e => e.type === 'checkbox' ? e.checked : e.value), scDraft, scCast.filter(c => !c._gone).length]); }
 function scDirty() { return scVals() !== scSnap; }
-function refreshDirty() { const d = $('#scDirty'); if (d) d.hidden = !scDirty(); }
-scDlg.addEventListener('input', e => { if (e.target.matches('textarea')) fit(e.target); refreshDirty(); });
-scDlg.addEventListener('change', refreshDirty);
-scDlg.addEventListener('click', () => setTimeout(refreshDirty));
+function scRefreshDirty() { const d = $('#scDirty'); if (d) d.hidden = !scDirty(); }
+scDlg.addEventListener('input', e => { if (e.target.matches('textarea')) fit(e.target); scRefreshDirty(); scNextLbl(); });
+scDlg.addEventListener('change', scRefreshDirty);
+scDlg.addEventListener('click', () => setTimeout(scRefreshDirty));
 scDlg.addEventListener('cancel', e => { if (scDirty() && !confirm('Masz niezapisane zmiany. Odrzucić je?')) e.preventDefault(); });
 $('#gAdv').addEventListener('toggle', fitAll);
-$('#scCharName').addEventListener('paste', e => pasteSplit(e, p => { $('#scCharName').value = p.name; if (p.desc) $('#scCharDesc').value = p.desc; fitAll(); refreshDirty(); }));
+$('#scCharName').addEventListener('paste', e => pasteSplit(e, p => { $('#scCharName').value = p.name; if (p.desc) $('#scCharDesc').value = p.desc; fitAll(); scRefreshDirty(); }));
 const pasteTxt = $('#scPasteTxt');
 function pastePreview() {
   const n = parseCast(pasteTxt.value).length, has = !!pasteTxt.value.trim();
@@ -2202,7 +2304,7 @@ $('#scPasteGo').onclick = () => {
     const ex = scCast.find(c => !c._gone && c.name.trim().toLowerCase() === x.name.toLowerCase());
     if (ex) { if (x.desc) ex.desc = x.desc; upd++; } else { scCast.push({ name: x.name, desc: x.desc, start: scMode === 'person', _open: p.length === 1 }); add++; }
   }
-  pasteTxt.value = ''; pastePreview(); $('#scPastePanel').hidden = true; renderCast(); fitAll(); refreshDirty();
+  pasteTxt.value = ''; pastePreview(); $('#scPastePanel').hidden = true; renderCast(); fitAll(); scRefreshDirty();
   const msg = [add && 'dodano ' + add, upd && 'zaktualizowano ' + upd].filter(Boolean).join(', ');
   toast(msg.charAt(0).toUpperCase() + msg.slice(1) + '.', 'ok');
 };
@@ -2264,7 +2366,7 @@ $('#impFile').onchange = async e => {
 };
 setTimeout(() => { if (S.messages.length > 20 && Date.now() - (G.lastBackup || 0) > 5 * 864e5) toast('Minęło kilka dni od ostatniej kopii zapasowej. Zrób ją w Ustawieniach.'); }, 2500);
 
-const APP_VERSION = '2026-10-29.1';
+const APP_VERSION = '2026-10-29.3';
 let swReg = null, swRefreshing = false;
 if ('serviceWorker' in navigator && /^https?:$/.test(location.protocol)) {
   navigator.serviceWorker.register('sw.js', { updateViaCache: 'none' }).then(reg => { swReg = reg; reg.update().catch(() => {}); }).catch(() => {});
