@@ -429,7 +429,7 @@ dialog[open]::backdrop{animation:dlg-fade .25s ease}
   </section>
   <section class="grp" id="gStart" data-step="start">
     <h3>Początek</h3>
-    <div class="field"><label for="scOpen">Scena otwierająca</label><textarea id="scOpen" placeholder="Co dzieje się na początku? Puste: narrator wymyśli."></textarea></div>
+    <div class="field"><label for="scOpen">Scena otwierająca</label><textarea id="scOpen" placeholder="Napisz scenę, od której zaczyna się historia. Pojawi się w czacie jako pierwsza wiadomość narratora, słowo w słowo. Puste: narrator wymyśli początek."></textarea></div>
     <div id="scStartOnly">
       <div class="field"><label for="scPoint">Postacie znają serial do końca odcinka</label><select id="scPoint"></select></div>
       <div class="field"><label for="scLoc">Miejsce na start</label><input id="scLoc" list="locList" autocomplete="off"></div>
@@ -1343,7 +1343,7 @@ function renderLog() {
       <button class="btn primary" id="startBtn">Zacznij historię</button>`;
     log.appendChild(w);
     $('#wKey').textContent = CUR().key ? '' : 'Najpierw wklej klucz API w ustawieniach.';
-    $('#startBtn').onclick = () => { if (!CUR().key) { openSet(); return; } send(startNote(), { hidden: true }); };
+    $('#startBtn').onclick = startStory;
   }
   S.messages.forEach((m, i) => {
     if (m.hidden && !m.divider) return;
@@ -1405,6 +1405,16 @@ function msgActs(m, i) {
   return r;
 }
 
+// Scena otwierająca wpisana przez użytkownika trafia do czatu dosłownie. Gotowe opisy z szablonów (po angielsku, pisane jako polecenie dla narratora) nadal rozwija narrator.
+const PRESET_OPENINGS = new Set(Object.values(PRESETS).map(p => (p.opening || '').trim()).filter(Boolean));
+function ownOpening() { const o = (S.opening || '').trim(); return o && !PRESET_OPENINGS.has(o) ? o : ''; }
+function startStory() {
+  if (!CUR().key && !ownOpening()) { openSet(); return; }
+  const o = ownOpening();
+  if (o) { S.messages.push({ role: 'model', text: o, opening: true, ts: Date.now() }); save(); renderLog(); renderSide(); return; }
+  send(startNote(), { hidden: true });
+}
+
 function startNote() {
   const o = (S.opening || '').trim();
   return '[START] Begin the story now. ' + (o ? 'Opening situation, as described by the player: ' + o + ' ' : '') +
@@ -1415,7 +1425,7 @@ function updateButtons() {
   updateMemChip(); updateHistChip();
   $('#sendBtn').textContent = busy ? 'Stop' : 'Wyślij';
   const started = S.messages.length > 0;
-  $('#redoBtn').disabled = busy || !started;
+  $('#redoBtn').disabled = busy || !started || (S.messages.length === 1 && !!S.messages[0].opening);
   $('#undoBtn').disabled = busy || !started;
   $('#contBtn').disabled = busy || !started;
 }
@@ -2366,7 +2376,7 @@ $('#impFile').onchange = async e => {
 };
 setTimeout(() => { if (S.messages.length > 20 && Date.now() - (G.lastBackup || 0) > 5 * 864e5) toast('Minęło kilka dni od ostatniej kopii zapasowej. Zrób ją w Ustawieniach.'); }, 2500);
 
-const APP_VERSION = '2026-10-29.3';
+const APP_VERSION = '2026-11-01.1';
 let swReg = null, swRefreshing = false;
 if ('serviceWorker' in navigator && /^https?:$/.test(location.protocol)) {
   navigator.serviceWorker.register('sw.js', { updateViaCache: 'none' }).then(reg => { swReg = reg; reg.update().catch(() => {}); }).catch(() => {});
