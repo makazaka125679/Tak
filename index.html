@@ -256,6 +256,13 @@ dialog[open]::backdrop{animation:dlg-fade .25s ease}
 #gMod .lbl{margin-top:.9rem}
 #gMod .kinds{margin:.3rem 0 .8rem}
 #gMod .seg{margin:.3rem 0}
+/* ===== v3.3: cofanie rozmowy i nowy czat ===== */
+.rewound{display:flex;align-items:center;justify-content:space-between;gap:.6rem;margin:1rem 0;padding:.5rem .5rem .5rem .8rem;border:1px dashed var(--line);border-radius:12px;color:var(--muted);font-size:.9rem}
+.rewq{margin:.6rem 0 0;padding:.6rem .8rem;border-left:3px solid var(--accent);background:var(--bg);border-radius:0 10px 10px 0;font:.98rem/1.55 var(--serif);max-height:30dvh;overflow-y:auto;overflow-wrap:anywhere}
+.rewq small{display:block;font:600 .78rem var(--sans);color:var(--muted);margin-bottom:.2rem;text-transform:uppercase;letter-spacing:.04em}
+.kind[disabled]{opacity:.5;cursor:default}
+#newDlg .kinds{margin-top:.8rem}
+.acts .btn.rw{border-color:var(--accent);color:var(--accent)}
 </style>
 </head>
 <body>
@@ -280,7 +287,7 @@ dialog[open]::backdrop{animation:dlg-fade .25s ease}
 
 <div class="shell">
 <aside id="side" aria-label="Scenariusze">
-  <div class="side-head"><h2>Scenariusze</h2><button class="btn primary" id="newScBtn">Nowy</button></div>
+  <div class="side-head"><h2>Scenariusze</h2><button class="btn primary" id="newScBtn">Nowy czat</button></div>
   <div class="sc-list" id="scList" role="list"></div>
   <div class="side-foot"><label class="btn" for="scImport">Importuj scenariusz</label><input id="scImport" type="file" accept="application/json,.json" class="sr"></div>
 </aside>
@@ -298,6 +305,7 @@ dialog[open]::backdrop{animation:dlg-fade .25s ease}
       <button id="moreBtn" class="btn ghost" aria-expanded="false" aria-label="Więcej: pamięć i historia">⋯</button>
       <button id="memBtn" class="btn ghost" hidden>Pamięć</button>
       <button id="histBtn" class="btn ghost" hidden>Historia</button>
+      <button id="newBtn" class="btn ghost" hidden>Nowy czat</button>
     </div>
     <div class="row">
       <label class="sr" for="input">Twoja wiadomość</label>
@@ -482,6 +490,24 @@ dialog[open]::backdrop{animation:dlg-fade .25s ease}
     <button class="btn" id="kbEdit">Edytuj</button><button class="btn primary" id="kbSave" hidden>Zapisz</button><button class="btn" id="kbCancel" hidden>Anuluj</button>
     <button class="btn" id="kbDl">Pobierz .md</button><button class="btn" id="kbClose">Zamknij</button>
   </div>
+</div></dialog>
+
+<dialog id="rewDlg" aria-labelledby="rewTitle"><div class="sheet">
+  <h2 id="rewTitle">Cofnąć rozmowę?</h2>
+  <p class="hint" id="rewInfo"></p>
+  <blockquote class="rewq" id="rewQuote"></blockquote>
+  <div class="actions"><button class="btn primary" id="rewGo">Cofnij</button><button class="btn" id="rewCancel">Anuluj</button></div>
+</div></dialog>
+
+<dialog id="newDlg" aria-labelledby="newTitle"><div class="sheet">
+  <h2 id="newTitle">Nowy czat</h2>
+  <p class="hint" id="newInfo"></p>
+  <div class="kinds">
+    <button type="button" class="kind" id="newSame"><b></b><span></span></button>
+    <button type="button" class="kind" id="newWipe"><b></b><span></span></button>
+    <button type="button" class="kind" id="newOther"><b></b><span></span></button>
+  </div>
+  <div class="actions"><button class="btn" id="newCancel">Anuluj</button></div>
 </div></dialog>
 
 <dialog id="editDlg" aria-labelledby="editTitle"><div class="sheet">
@@ -1243,7 +1269,7 @@ const PRESETS = {
 
 const GLOBAL_KEYS = ['apiKey', 'model', 'provider', 'keys', 'models', 'theme', 'oled', 'emo', 'len', 'ctx', 'usage', 'think', 'lastBackup', 'temperature', 'lang', 'tone', 'nsfwOk', 'kbOverride'];
 const uid = () => 's' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
-const newScenario = (over = {}) => ({ id: uid(), name: 'Nowy scenariusz', playerName: '', playerAge: 0, nsfw: 'off', gore: 'medium', backstory: '', opening: '', notes: '', kind: 'from', point: 2, time: 'day', location: '', present: [], focus: '', charName: '', charDesc: '', world: '', others: [], mode: 'person', cast: [], messages: [], summary: '', summaryUpTo: 0, journal: [], pins: [], memAt: 0, memUndo: null, deadNow: [], chapters: [], chapterAt: 0, chapterUndo: null, created: Date.now(), updated: Date.now(), ...over });
+const newScenario = (over = {}) => ({ id: uid(), name: 'Nowy scenariusz', playerName: '', playerAge: 0, nsfw: 'off', gore: 'medium', backstory: '', opening: '', notes: '', kind: 'from', point: 2, time: 'day', location: '', present: [], focus: '', charName: '', charDesc: '', world: '', others: [], mode: 'person', cast: [], messages: [], summary: '', summaryUpTo: 0, journal: [], pins: [], memAt: 0, memUndo: null, deadNow: [], chapters: [], chapterAt: 0, chapterUndo: null, memSnaps: [], initScene: null, created: Date.now(), updated: Date.now(), ...over });
 const fromPreset = k => { const p = PRESETS[k]; return newScenario({ name: p.name, backstory: p.backstory, opening: p.opening, notes: p.notes, point: p.point, time: p.time, location: p.location, present: p.present.slice(), focus: p.focus }); };
 
 let G = { ver: 3, apiKey: '', model: 'gemini-3.5-flash-lite', provider: 'gemini', keys: null, models: null, theme: 'auto', oled: false, gore: 'medium', emo: 'expressive', len: 'medium', ctx: 'auto', usage: { day: '', n: 0, left: null }, think: 'auto', lastBackup: 0, temperature: 0.85, lang: 'en', tone: 'natural', nsfw: 'off', nsfwOk: false, kbOverride: null, activeId: null };
@@ -1355,6 +1381,11 @@ function renderLog() {
     log.appendChild(d);
     if (m.role === 'model' && i === S.messages.length - 1 && m.alts && m.alts.length > 1) log.appendChild(altNav(m));
   });
+  if (undoBox && undoBox.id === G.activeId) {
+    const b = document.createElement('div'); b.className = 'rewound'; b.setAttribute('role', 'status');
+    b.innerHTML = '<span></span><button class="btn ghost" type="button">Przywróć</button>';
+    b.firstChild.textContent = undoBox.msg; b.lastChild.onclick = restoreBackup; log.appendChild(b);
+  }
   updateButtons(); toBottom();
 }
 
@@ -1393,7 +1424,7 @@ $('#editSave').onclick = () => { if (editCommit()) toast('Zapisano zmiany.', 'ok
 $('#editRedo').onclick = () => { const i = editIdx; if (editCommit()) { S.messages.splice(i + 1); save(); redo(); } };
 function msgActs(m, i) {
   const r = document.createElement('div'); r.className = 'acts';
-  const add = (t, f) => { const b = document.createElement('button'); b.className = 'btn ghost'; b.textContent = t; b.onclick = e => { e.stopPropagation(); f(); }; r.appendChild(b); };
+  const add = (t, f) => { const b = document.createElement('button'); b.className = 'btn ghost'; b.textContent = t; b.onclick = e => { e.stopPropagation(); f(); }; r.appendChild(b); return b; };
   add('Kopiuj', () => navigator.clipboard.writeText(m.text).then(() => toast('Skopiowano.', 'ok'), () => toast('Nie udało się skopiować.', 'err')));
   if (busy) return r;
   if (m.role === 'user') add('Edytuj', () => openEdit(m, i));
@@ -1401,6 +1432,8 @@ function msgActs(m, i) {
     add('Edytuj', () => openEdit(m, i));
     add('To błędne', () => { const t = prompt('Co jest nie tak i jak jest naprawdę? To trafi do przypiętych faktów.'); if (t && t.trim()) { S.pins = [...(S.pins || []), t.trim()]; save(); toast('Dodano do przypiętych faktów. Model użyje tego od następnej odpowiedzi.', 'ok'); } });
   }
+  if (i < S.messages.length - 1) { const b = add('Cofnij tutaj', () => askRewind(i, 'here')); b.classList.add('rw'); }
+  if (m.role === 'user' && !m.hidden) { const b = add('Cofnij i przepisz', () => askRewind(i, 'rewrite')); b.classList.add('rw'); }
   add('Usuń', () => { if (!confirm('Usunąć tę wiadomość?')) return; S.messages.splice(i, 1); if (i < (S.memAt || 0)) S.memAt--; if (i < S.summaryUpTo) S.summaryUpTo--; if (i < (S.chapterAt || 0)) S.chapterAt--; S.chapters = (S.chapters || []).filter(c => c.at <= S.messages.length); save(); renderLog(); toast('Wiadomość usunięta.', 'ok'); });
   return r;
 }
@@ -1411,6 +1444,7 @@ function ownOpening() { const o = (S.opening || '').trim(); return o && !PRESET_
 function startStory() {
   if (!CUR().key && !ownOpening()) { openSet(); return; }
   const o = ownOpening();
+  ensureInit(A());
   if (o) { S.messages.push({ role: 'model', text: o, opening: true, ts: Date.now() }); save(); renderLog(); renderSide(); return; }
   send(startNote(), { hidden: true });
 }
@@ -1506,6 +1540,7 @@ async function generateOnce(system, contents, temperature, maxTokens, ov, schema
 async function send(text, opts = {}) {
   if (busy) { if (ctl) ctl.abort(); return; }
   if (!CUR().key) { openSet(); toast('Najpierw wklej klucz API Gemini.', 'err'); return; }
+  undoBox = null; ensureInit(A());
   if (text != null) S.messages.push({ role: 'user', text, hidden: !!opts.hidden, ts: Date.now() });
   save(); renderLog();
   await generate();
@@ -1553,29 +1588,90 @@ async function generate() {
 
 function addNote(text, divider) { S.messages.push({ role: 'user', hidden: true, text, divider: divider || undefined, ts: Date.now() }); }
 
+/* ---- cofanie: jedno miejsce, które przycina rozmowę i cofa pamięć razem z nią ---- */
+let undoBox = null;
+const BK_KEYS = ['messages', 'summary', 'summaryUpTo', 'journal', 'pins', 'memAt', 'memUndo', 'deadNow', 'chapters', 'chapterAt', 'chapterUndo', 'memSnaps', 'present', 'location', 'time', 'focus'];
+function takeBackup(msg) { const sc = A(), o = {}; BK_KEYS.forEach(k => { o[k] = sc[k]; }); undoBox = { id: sc.id, msg, data: JSON.stringify(o) }; }
+function restoreBackup() {
+  if (busy || !undoBox) return;
+  const sc = SC.find(x => x.id === undoBox.id); if (!sc) { undoBox = null; return; }
+  Object.assign(sc, JSON.parse(undoBox.data)); undoBox = null; save(); renderAll(); toast('Przywrócono rozmowę.', 'ok');
+}
+const plWiad = n => n === 1 ? '1 wiadomość' : n + ' wiadomości';
+const snapOf = (sc, at) => ({ at, summary: sc.summary || '', summaryUpTo: sc.summaryUpTo || 0, present: (sc.present || []).slice(), location: sc.location || '', deadNow: (sc.deadNow || []).slice() });
+function putSnap(sc, sn) { sc.memSnaps = (sc.memSnaps || []).filter(x => x.at !== sn.at); sc.memSnaps.push(sn); sc.memSnaps.sort((a, b) => a.at - b.at); if (sc.memSnaps.length > 30) sc.memSnaps.splice(0, sc.memSnaps.length - 30); }
+function ensureInit(sc) { if (!sc.initScene && !sc.messages.length) sc.initScene = { present: (sc.present || []).slice(), location: sc.location || '', time: sc.time || 'day', focus: sc.focus || '' }; }
+// Zostawia pierwsze n wiadomości. Pamięć, dziennik i rozdziały wracają do stanu z tego momentu. Zwraca true, gdy nie było migawki pamięci (starszy zapis).
+function trimTo(n) {
+  const sc = A(), removed = sc.messages.splice(n);
+  sc.journal = (sc.journal || []).filter(j => j.at <= n);
+  const had = (sc.chapters || []).length;
+  sc.chapters = (sc.chapters || []).filter(c => c.at <= n);
+  sc.chapterAt = sc.chapters.length < had ? (sc.chapters.length ? Math.min(sc.chapters[sc.chapters.length - 1].at, n) : 0) : Math.min(sc.chapterAt || 0, n);
+  sc.memUndo = null; sc.chapterUndo = null;
+  sc.memSnaps = (sc.memSnaps || []).filter(x => x.at <= n);
+  let legacy = false;
+  if ((sc.memAt || 0) > n) {
+    const sn = sc.memSnaps[sc.memSnaps.length - 1];
+    if (sn) { sc.summary = sn.summary; sc.summaryUpTo = sn.summaryUpTo; sc.memAt = sn.at; sc.present = sn.present.slice(); sc.location = sn.location; sc.deadNow = sn.deadNow.slice(); }
+    else { sc.memAt = n; legacy = true; }
+  }
+  sc.summaryUpTo = Math.min(sc.summaryUpTo || 0, n);
+  if (removed.some(m => m.divider)) { const d = sc.messages.slice().reverse().find(m => m.divider); if (d) sc.time = /NIGHT/.test(d.text || '') ? 'night' : 'day'; }
+  return legacy;
+}
 function undo() {
   if (busy) return;
-  while (S.messages.length && (S.messages[S.messages.length - 1].role === 'model' || S.messages[S.messages.length - 1].divider)) S.messages.pop();
-  if (S.messages.length) S.messages.pop();
-  S.summaryUpTo = Math.min(S.summaryUpTo, S.messages.length); S.memAt = Math.min(S.memAt || 0, S.messages.length); S.journal = (S.journal || []).filter(j => j.at <= S.messages.length);
-  S.chapterAt = Math.min(S.chapterAt || 0, S.messages.length); S.chapters = (S.chapters || []).filter(c => c.at <= S.messages.length);
-  save(); renderLog();
+  let n = S.messages.length;
+  while (n && (S.messages[n - 1].role === 'model' || S.messages[n - 1].divider)) n--;
+  if (n) n--;
+  trimTo(n); save(); applyTheme(); renderLog();
 }
 function redo() {
   if (busy || !S.messages.length) return;
+  undoBox = null;
   let carry = null;
   const last = S.messages[S.messages.length - 1];
   if (last && last.role === 'model') carry = (last.alts && last.alts.length ? last.alts.slice() : [last.text]);
-  while (S.messages.length && S.messages[S.messages.length - 1].role === 'model') S.messages.pop();
-  S.summaryUpTo = Math.min(S.summaryUpTo, S.messages.length); S.memAt = Math.min(S.memAt || 0, S.messages.length); S.journal = (S.journal || []).filter(j => j.at <= S.messages.length);
-  S.chapterAt = Math.min(S.chapterAt || 0, S.messages.length); S.chapters = (S.chapters || []).filter(c => c.at <= S.messages.length);
-  save(); renderLog();
+  let n = S.messages.length;
+  while (n && S.messages[n - 1].role === 'model') n--;
+  trimTo(n); save(); renderLog();
   generate().then(() => {
     if (!carry) return;
     const nm = S.messages[S.messages.length - 1];
     if (nm && nm.role === 'model') { nm.alts = carry.concat([nm.text]); nm.altIdx = nm.alts.length - 1; save(); renderLog(); }
   });
 }
+
+/* ---- cofnięcie do wybranej wiadomości ---- */
+let rewPlan = null;
+function askRewind(i, mode) {
+  if (busy) return;
+  const m = S.messages[i]; if (!m) return;
+  const n = mode === 'rewrite' ? i : i + 1, removed = S.messages.slice(n), vis = removed.filter(x => !x.hidden && !x.divider).length;
+  if (!removed.length) { toast('To już ostatnia wiadomość.'); return; }
+  rewPlan = { n, mode, text: m.text || '' };
+  const txt = (m.text || '').replace(/\*\*/g, '').trim();
+  $('#rewTitle').textContent = mode === 'rewrite' ? 'Cofnąć i przepisać wiadomość?' : 'Cofnąć rozmowę do tego miejsca?';
+  $('#rewInfo').textContent = (mode === 'rewrite'
+    ? 'Ta wiadomość i wszystko po niej zniknie (razem ' + plWiad(vis) + '), a jej tekst wróci do pola wpisywania, żebyś mógł go poprawić. '
+    : 'Wszystko po tej wiadomości zniknie (' + plWiad(vis) + '), a ty zaczniesz stąd od nowa. ')
+    + 'Pamięć opowieści i historia cofną się razem z rozmową.';
+  $('#rewQuote').innerHTML = '<small>' + (mode === 'rewrite' ? 'Ta wiadomość wróci do pola' : 'Wracasz do tego miejsca') + '</small>' + escHtml(txt.length > 260 ? txt.slice(0, 257) + '…' : txt);
+  $('#rewGo').textContent = mode === 'rewrite' ? 'Cofnij i przepisz' : 'Cofnij tutaj';
+  $('#rewDlg').showModal();
+}
+$('#rewCancel').onclick = () => $('#rewDlg').close();
+$('#rewGo').onclick = () => {
+  const pl = rewPlan; $('#rewDlg').close(); if (!pl || busy) return;
+  const before = S.messages.length;
+  takeBackup('Cofnięto o ' + plWiad(S.messages.slice(pl.n).filter(x => !x.hidden && !x.divider).length) + '.');
+  const legacy = trimTo(pl.n); save(); applyTheme(); refreshFocus(); renderLog(); renderSide();
+  if (pl.mode === 'rewrite') { input.value = pl.text; grow(); input.focus(); }
+  else if (S.messages[S.messages.length - 1].role === 'user') toast('Cofnięto. Kliknij „Ponów”, żeby narrator odpowiedział od nowa.', 'ok');
+  else toast('Cofnięto. Możesz pisać dalej od tego miejsca.', 'ok');
+  if (legacy) setTimeout(() => toast('Ten zapis nie miał migawek pamięci. Sprawdź w ⋯ Pamięć, czy stan świata nie wspomina o cofniętych wydarzeniach.'), 3400);
+};
 
 /* ================= MEMORY (event journal + world state) ================= */
 const MEM_EVERY = 4;
@@ -1603,6 +1699,7 @@ async function updateMemory(force) {
     const ev = (j.events || []).map(x => String(x).trim()).filter(x => x.length > 8);
     const world = Object.entries(MEM_F).map(([k, v]) => { const x = String(j[k] || '').trim(); return x && !/^(none|n\/a|-)\.?$/i.test(x) ? `- ${v[0]}: ${x}` : ''; }).filter(Boolean).join('\n');
     if (world.length < 30) throw new Error('pusty stan świata');
+    if (!(sc.memSnaps || []).some(x => x.at === (sc.memAt || 0))) putSnap(sc, snapOf(sc, sc.memAt || 0));
     sc.memUndo = { summary: sc.summary, jlen: sc.journal.length, summaryUpTo: sc.summaryUpTo, memAt: sc.memAt, present: sc.present.slice(), location: sc.location, deadNow: (sc.deadNow || []).slice() };
     ev.forEach(t => { if (!sc.journal.some(x => x.t === t)) sc.journal.push({ t, at: upto }); });
     sc.summary = world; sc.memAt = upto; sc.summaryUpTo = Math.max(sc.summaryUpTo, upto - Math.max(6, histCap() - 4));
@@ -1612,6 +1709,7 @@ async function updateMemory(force) {
     let sceneNote = '';
     if (matched.length && JSON.stringify(matched) !== JSON.stringify(sc.present)) { sc.present = matched; sceneNote = ' Scena: obecni ' + matched.join(', ') + '.'; }
     if (locNow && locNow !== sc.location) { sc.location = locNow; sceneNote += ' Miejsce: ' + locNow + '.'; }
+    putSnap(sc, snapOf(sc, upto));
     memSkip = 0; memErr = ''; save();
     if (sc === A()) { toast(`Pamięć zaktualizowana: +${ev.length} zdarzeń w dzienniku.${sceneNote}`, 'ok'); refreshFocus(); }
   } catch (e) { memSkip = 1; memErr = e.message; if (force) toast('Nie udało się zaktualizować pamięci: ' + e.message, 'err'); }
@@ -1944,7 +2042,7 @@ function renderSide() {
   for (const sc of sorted) {
     const e = sc.kind === 'custom' ? null : epById(sc.point); const n = sc.messages.filter(m => !m.hidden && !m.divider).length;
     const row = document.createElement('div'); row.className = 'sc-item'; row.setAttribute('role', 'listitem'); row.setAttribute('aria-current', String(sc.id === G.activeId));
-    row.innerHTML = `<button class="sc-main"><span class="sc-name">${escHtml(sc.name)}</span><span class="sc-meta">${escHtml(sc.playerName || 'gracz')} · ${e ? 'S' + e.s + 'E' + e.e : (sc.kind === 'custom' ? (sc.mode === 'world' ? 'świat' : 'postać') : '')} · ${n} wiad.</span></button><button class="sc-edit" aria-label="Edytuj scenariusz: ${escHtml(sc.name)}">${PENCIL}</button>`;
+    row.innerHTML = `<button class="sc-main"><span class="sc-name">${escHtml(sc.name)}</span><span class="sc-meta">${escHtml(sc.playerName || 'gracz')} · ${e ? 'S' + e.s + 'E' + e.e : (sc.kind === 'custom' ? (sc.mode === 'world' ? 'świat' : 'postać') : '')} · ${n} wiad.${n ? ' · ' + new Date(sc.updated).toLocaleDateString('pl-PL', { day: 'numeric', month: 'short' }) : ''}</span></button><button class="sc-edit" aria-label="Edytuj scenariusz: ${escHtml(sc.name)}">${PENCIL}</button>`;
     row.querySelector('.sc-main').onclick = () => switchTo(sc.id);
     row.querySelector('.sc-edit').onclick = () => openScenarioDialog(sc.id);
     list.appendChild(row);
@@ -2174,7 +2272,35 @@ function openScenarioDialog(id) {
   }
   scDlg.showModal(); $('#scPastePanel').hidden = true; scDlg.querySelector('.sheet').scrollTop = 0; fitAll(); scSnap = scVals(); scRefreshDirty();
 }
-$('#newScBtn').onclick = () => openScenarioDialog(null);
+function clearChat(sc) {
+  Object.assign(sc, { messages: [], summary: '', summaryUpTo: 0, journal: [], pins: [], memAt: 0, memUndo: null, deadNow: [], chapters: [], chapterAt: 0, chapterUndo: null, memSnaps: [] });
+  const i = sc.initScene; if (i) { sc.present = (i.present || []).slice(); sc.location = i.location || ''; sc.time = i.time || 'day'; sc.focus = i.focus || ''; }
+}
+function openNew() {
+  const sc = A(), n = sc.messages.filter(m => !m.hidden && !m.divider).length, empty = !sc.messages.length;
+  $('#newInfo').textContent = 'Teraz: „' + sc.name + '” · ' + (empty ? 'pusta rozmowa' : plWiad(n)) + '.';
+  const set = (id, t, d, off) => { const b = $(id); b.querySelector('b').textContent = t; b.querySelector('span').textContent = d; b.disabled = !!off; };
+  set('#newSame', '💬 Nowy czat z tą samą postacią', empty ? 'Ta rozmowa jest jeszcze pusta, więc możesz po prostu zacząć historię.' : 'Czysta rozmowa z tymi samymi ustawieniami. Obecna rozmowa zostaje w liście scenariuszy.', empty);
+  set('#newWipe', '↺ Zacznij ten czat od nowa', empty ? 'Nie ma czego kasować.' : 'Kasuje rozmowę, pamięć i historię w tym scenariuszu. Ustawienia zostają. Przez chwilę można to cofnąć.', empty);
+  set('#newOther', '✨ Nowa postać lub świat', 'Kreator: własna postać, świat albo postacie z serialu From.');
+  $('#newDlg').showModal();
+}
+$('#newScBtn').onclick = openNew; $('#newBtn').onclick = openNew;
+$('#newCancel').onclick = () => $('#newDlg').close();
+$('#newOther').onclick = () => { $('#newDlg').close(); openScenarioDialog(null); };
+$('#newSame').onclick = () => {
+  const src = A(); if (!src.messages.length) return;
+  if (busy && ctl) ctl.abort();
+  const cp = JSON.parse(JSON.stringify(src)); cp.id = uid(); cp.created = cp.updated = Date.now(); clearChat(cp);
+  undoBox = null; SC.push(cp); G.activeId = cp.id; save(); renderAll(); $('#newDlg').close(); closeSide();
+  toast('Nowy czat gotowy. Poprzedni zostaje w liście scenariuszy.', 'ok');
+};
+$('#newWipe').onclick = () => {
+  const sc = A(); if (!sc.messages.length) return;
+  if (busy && ctl) ctl.abort();
+  takeBackup('Rozmowa wyczyszczona.'); clearChat(sc); save(); renderAll(); $('#newDlg').close(); closeSide();
+  toast('Zaczynasz od nowa. Pod ekranem startowym jest „Przywróć”.', 'ok');
+};
 document.querySelectorAll('#scKindSeg button').forEach(b => b.onclick = () => { if (b.dataset.k !== scType && scDirty() && !confirm('Zmiana typu wyczyści wpisane pola. Zmienić?')) return; scSetKind(b.dataset.k); });
 $('#scSteps').onclick = e => { const b = e.target.closest('button[data-k]'); if (b) scGoTo(b.dataset.k); };
 $('#scBack').onclick = () => scGoTo(scList[Math.max(0, scList.indexOf(scCur) - 1)]);
@@ -2183,7 +2309,7 @@ document.querySelectorAll('#scTimeC button').forEach(b => b.onclick = () => scSe
 $('#scPreset').onchange = e => scApplyPreset(e.target.value);
 $('#scPoint').onchange = e => { scDraft.point = +e.target.value; scChips(); };
 document.querySelectorAll('#scTime button').forEach(b => b.onclick = () => scSetTime(b.dataset.time));
-$('#moreBtn').onclick = () => { const o = $('#memBtn').hidden; $('#memBtn').hidden = !o; $('#histBtn').hidden = !o; $('#moreBtn').setAttribute('aria-expanded', String(o)); };
+$('#moreBtn').onclick = () => { const o = $('#memBtn').hidden; $('#memBtn').hidden = !o; $('#histBtn').hidden = !o; $('#newBtn').hidden = !o; $('#moreBtn').setAttribute('aria-expanded', String(o)); };
 $('#scCancel').onclick = () => { if (!scDirty() || confirm('Masz niezapisane zmiany. Odrzucić je?')) scDlg.close(); };
 $('#scCastAdd').onclick = () => { scCast.push({ name: '', desc: '', start: scMode === 'person', _open: true }); renderCast(); fitAll(); const k = $('#scCast').lastElementChild; k.scrollIntoView({ block: 'center', behavior: 'smooth' }); k.querySelector('.cc-body input:not([type=checkbox])').focus({ preventScroll: true }); };
 $('#scGen').onclick = async () => {
@@ -2263,11 +2389,11 @@ $('#scReset').onclick = () => {
   const src = SC.find(s => s.id === scEditId); if (!src) return;
   if (!confirm('Zacząć ten scenariusz od nowa? Rozmowa i pamięć opowieści zostaną usunięte.')) return;
   if (busy && ctl && src.id === G.activeId) ctl.abort();
-  src.messages = []; src.summary = ''; src.summaryUpTo = 0; src.journal = []; src.pins = []; src.memAt = 0; src.memUndo = null; src.deadNow = []; src.chapters = []; src.chapterAt = 0; src.chapterUndo = null; save(); renderAll(); scDlg.close();
+  clearChat(src); undoBox = null; save(); renderAll(); scDlg.close();
 };
 $('#scExp').onclick = () => {
   const src = SC.find(s => s.id === scEditId); if (!src) return;
-  const { messages, summary, summaryUpTo, journal, pins, memAt, memUndo, deadNow, chapters, chapterAt, chapterUndo, id, created, updated, ...shareable } = src;
+  const { messages, summary, summaryUpTo, journal, pins, memAt, memUndo, deadNow, chapters, chapterAt, chapterUndo, memSnaps, initScene, id, created, updated, ...shareable } = src;
   const blob = new Blob([JSON.stringify({ type: 'from-scenario', version: 3, scenario: shareable }, null, 1)], { type: 'application/json' });
   const slug = (src.name || 'postac').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '') || 'postac';
   const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = slug + '.json'; a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 2000);
@@ -2279,7 +2405,7 @@ $('#scImport').onchange = async e => {
     const d = JSON.parse(await f.text());
     const src = d.scenario || ((d.name || d.charName || d.backstory) ? d : null);
     if (!src) throw new Error('bad');
-    const sc = newScenario({ ...src, id: uid(), created: Date.now(), updated: Date.now(), messages: [], summary: '', summaryUpTo: 0, journal: [], pins: [], memAt: 0, memUndo: null, deadNow: [], chapters: [], chapterAt: 0, chapterUndo: null });
+    const sc = newScenario({ ...src, id: uid(), created: Date.now(), updated: Date.now(), messages: [], summary: '', summaryUpTo: 0, journal: [], pins: [], memAt: 0, memUndo: null, deadNow: [], chapters: [], chapterAt: 0, chapterUndo: null, memSnaps: [], initScene: null });
     SC.push(sc); G.activeId = sc.id; save(); renderAll(); closeSide(); toast('Scenariusz zaimportowany.', 'ok');
   } catch (err) { toast('To nie jest poprawny plik scenariusza.', 'err'); }
   e.target.value = '';
@@ -2340,7 +2466,7 @@ $('#memBtn').onclick = () => { fillMem(); memDlg.showModal(); };
 $('#memClose').onclick = () => memDlg.close();
 $('#memSave').onclick = () => { S.summary = $('#memWorld').value.trim(); S.pins = $('#memPins').value.split('\n').map(x => x.trim()).filter(Boolean); save(); fillMem(); toast('Pamięć zapisana. Model użyje jej od następnej odpowiedzi.', 'ok'); };
 $('#memNow').onclick = async () => { $('#memNow').disabled = true; await updateMemory(true); $('#memNow').disabled = false; fillMem(); };
-$('#memUndo').onclick = () => { const u = S.memUndo; if (!u) return; S.summary = u.summary; S.journal.length = u.jlen; S.summaryUpTo = u.summaryUpTo; S.memAt = u.memAt; if (u.present) S.present = u.present; if (u.location != null) S.location = u.location; if (u.deadNow) S.deadNow = u.deadNow; S.memUndo = null; save(); fillMem(); updateMemChip(); refreshFocus(); toast('Cofnięto ostatnią aktualizację pamięci.', 'ok'); };
+$('#memUndo').onclick = () => { const u = S.memUndo; if (!u) return; S.summary = u.summary; S.journal.length = u.jlen; S.summaryUpTo = u.summaryUpTo; S.memAt = u.memAt; S.memSnaps = (S.memSnaps || []).filter(x => x.at <= u.memAt); if (u.present) S.present = u.present; if (u.location != null) S.location = u.location; if (u.deadNow) S.deadNow = u.deadNow; S.memUndo = null; save(); fillMem(); updateMemChip(); refreshFocus(); toast('Cofnięto ostatnią aktualizację pamięci.', 'ok'); };
 
 function fillHist() {
   const box = $('#histJ'); box.innerHTML = '';
@@ -2376,7 +2502,7 @@ $('#impFile').onchange = async e => {
 };
 setTimeout(() => { if (S.messages.length > 20 && Date.now() - (G.lastBackup || 0) > 5 * 864e5) toast('Minęło kilka dni od ostatniej kopii zapasowej. Zrób ją w Ustawieniach.'); }, 2500);
 
-const APP_VERSION = '2026-11-01.1';
+const APP_VERSION = '2026-11-08.1';
 let swReg = null, swRefreshing = false;
 if ('serviceWorker' in navigator && /^https?:$/.test(location.protocol)) {
   navigator.serviceWorker.register('sw.js', { updateViaCache: 'none' }).then(reg => { swReg = reg; reg.update().catch(() => {}); }).catch(() => {});
