@@ -257,6 +257,7 @@ dialog[open]::backdrop{animation:dlg-fade .25s ease}
 #gMod .kinds{margin:.3rem 0 .8rem}
 #gMod .seg{margin:.3rem 0}
 /* ===== v3.3: cofanie rozmowy i nowy czat ===== */
+.scard{margin:1rem 0;padding:.7rem .85rem;border:1px solid var(--line);border-left:3px solid var(--accent);border-radius:10px;font-size:.92rem;overflow-wrap:anywhere}.scard b{display:block;margin-bottom:.35rem}.scard .sq,.scard .ss{color:var(--muted);font-size:.82rem;margin-top:.45rem}.scard .st{white-space:pre-wrap}.scard a{color:var(--accent)}
 .rewound{display:flex;align-items:center;justify-content:space-between;gap:.6rem;margin:1rem 0;padding:.5rem .5rem .5rem .8rem;border:1px dashed var(--line);border-radius:12px;color:var(--muted);font-size:.9rem}
 .rewq{margin:.6rem 0 0;padding:.6rem .8rem;border-left:3px solid var(--accent);background:var(--bg);border-radius:0 10px 10px 0;font:.98rem/1.55 var(--serif);max-height:30dvh;overflow-y:auto;overflow-wrap:anywhere}
 .rewq small{display:block;font:600 .78rem var(--sans);color:var(--muted);margin-bottom:.2rem;text-transform:uppercase;letter-spacing:.04em}
@@ -364,7 +365,7 @@ dialog[open]::backdrop{animation:dlg-fade .25s ease}
     <div class="field"><label for="toneSel">Wulgaryzmy i humor</label><select id="toneSel"><option value="off">Bez przekleństw</option><option value="natural">Naturalnie (przeklinają i żartują)</option><option value="heavy">Ostro (dużo przekleństw)</option></select></div>
     <div class="field"><label for="tempIn">Kreatywność odpowiedzi (0–2)</label><input id="tempIn" type="number" min="0" max="2" step="0.05"><p class="hint">Ok. 0,7 = spójniej. Ok. 1,2 = bardziej zaskakująco.</p></div>
     <div class="field"><label for="thinkSel">Namysł modelu</label><select id="thinkSel"><option value="auto">Domyślny</option><option value="low">Krótki (szybciej)</option><option value="high">Głęboki (logiczniej, wolniej)</option></select><p class="hint">Jeśli model nie obsługuje tej opcji, strona sama ją pominie.</p></div>
-    <p class="hint"><b>Szukanie w internecie:</b> zacznij wiadomość od <b>/szukaj</b> (np. „/szukaj po co Odin przyszedł do Kratosa”). Postać sprawdzi w sieci, co dzieje się w oryginale, i poprowadzi scenę zgodnie z nim.</p>
+    <p class="hint"><b>Szukanie w internecie:</b> zacznij wiadomość od <b>/szukaj</b> (np. „/szukaj po co Odin przyszedł do Kratosa”). Postać sprawdzi w sieci, co dzieje się w oryginale, i poprowadzi scenę zgodnie z nim.<br><b>/search:</b> pełne wyszukiwanie w Google (np. „/search: God of War Ragnarök Odin wizyta u Kratosa”). Zobaczysz wyniki i źródła, a postacie będą ich używać dalej.</p>
   </section>
   <section class="card" data-sec="look"><h3>Wygląd</h3>
     <div class="seg" id="themeSeg"><button data-v="light">Jasny</button><button data-v="dark">Ciemny</button><button data-v="auto">Jak telefon</button><button data-v="story">Jak w fabule</button></div>
@@ -1373,6 +1374,12 @@ function renderLog() {
     $('#startBtn').onclick = startStory;
   }
   S.messages.forEach((m, i) => {
+    if (m.search) {
+      const d = document.createElement('div'); d.className = 'scard';
+      const li = (m.src || []).map(x => `<a href="${escHtml(x.uri)}" target="_blank" rel="noopener">${escHtml(x.title || x.uri)}</a>`).join(' · ');
+      d.innerHTML = `<b>🔍 Wyszukano w Google: ${escHtml(m.q)}</b><div class="st">${escHtml(m.answer || '')}</div>${m.queries && m.queries.length ? `<div class="sq">Zapytania: ${escHtml(m.queries.join(' · '))}</div>` : ''}${li ? `<div class="ss">Źródła: ${li}</div>` : ''}`;
+      log.appendChild(d); return;
+    }
     if (m.hidden && !m.divider) return;
     if (m.divider) { const d = document.createElement('div'); d.className = 'divider'; d.textContent = m.divider; log.appendChild(d); return; }
     const d = document.createElement('div');
@@ -1541,13 +1548,45 @@ async function generateOnce(system, contents, temperature, maxTokens, ov, schema
 async function send(text, opts = {}) {
   if (busy) { if (ctl) ctl.abort(); return; }
   if (!CUR().key) { openSet(); toast('Najpierw wklej klucz API Gemini.', 'err'); return; }
+  const fm = text != null && !opts.hidden && SEARCH_FULL.exec(text);
+  if (fm) return webSearch(fm[1].trim());
   undoBox = null; ensureInit(A());
   if (text != null) S.messages.push({ role: 'user', text, hidden: !!opts.hidden, ts: Date.now() });
   save(); renderLog();
   await generate();
 }
 
-const SEARCH_CMD = /^\s*\/(szukaj|wyszukaj|search)\b/i;
+async function webSearch(q) {
+  busy = true; ctl = new AbortController(); updateButtons(); undoBox = null; ensureInit(A());
+  const sc = A();
+  const holder = document.createElement('div'); holder.className = 'scard';
+  holder.innerHTML = '<b>🔍 Szukam w Google…</b><div class="st"></div><span class="typing"><i></i><i></i><i></i></span>';
+  holder.querySelector('.st').textContent = q; log.appendChild(holder); toBottom();
+  let errMsg = '';
+  try {
+    const lastScene = [...sc.messages].reverse().find(m => m.role === 'model' && m.text);
+    const lang = S.lang === 'pl' ? 'Polish' : 'English';
+    const system = 'You are a thorough web researcher with Google Search. Do NOT answer from memory. Run several different searches from different angles, check more than one source, and prefer official or well-known fan wikis. Then write a factual, well-organised summary in ' + lang + ' (at most about 300 words, short paragraphs or bullets). Say clearly what is uncertain or disputed. If the question is about a game, series, film or book, say what happens in the source material. Plain text, no markdown headers.';
+    const ctx = 'Story context: "' + S.name + '".' + (lastScene ? '\nCurrent scene (for context only): ' + lastScene.text.slice(-700) : '');
+    const body = { systemInstruction: { parts: [{ text: system }] }, contents: [{ role: 'user', parts: [{ text: ctx + '\n\nResearch this: ' + q }] }], tools: [{ google_search: {} }], generationConfig: { temperature: 0.3, maxOutputTokens: 2048 }, safetySettings: safetyFor() };
+    const res = await gemFetch(CUR(), 'generateContent', body, ctl.signal);
+    if (!res.ok) throw await apiError(res, CUR().model);
+    const d = await res.json(), c = d.candidates && d.candidates[0];
+    const answer = ((c && c.content && c.content.parts) || []).filter(p => p.text && !p.thought).map(p => p.text).join('').trim();
+    if (!answer) throw new Error('Wyszukiwanie nie zwróciło wyniku. Spróbuj inaczej sformułować pytanie albo zmień model w ustawieniach.');
+    const gm = (c && c.groundingMetadata) || {};
+    const seen = new Set(), src = [];
+    for (const g of gm.groundingChunks || []) if (g.web && g.web.uri && !seen.has(g.web.uri)) { seen.add(g.web.uri); src.push({ uri: g.web.uri, title: g.web.title || '' }); }
+    sc.messages.push({ role: 'user', hidden: true, search: true, q, answer, src: src.slice(0, 8), queries: (gm.webSearchQueries || []).slice(0, 6), text: '[GM note: the player ran a web search for "' + q + '". Verified findings from Google Search follow. Treat them as true facts about the source material and let the story and characters follow them from now on. Do not quote this note or mention searching.]\n' + answer, ts: Date.now() });
+    save();
+  } catch (e) { if (e.name !== 'AbortError') errMsg = e.message || 'Nieznany błąd.'; }
+  busy = false; ctl = null; holder.remove(); renderLog(); renderSide();
+  if (sc !== A()) return;
+  if (errMsg) { const d = document.createElement('div'); d.className = 'err'; d.textContent = errMsg; log.appendChild(d); toBottom(); }
+  else toast('Gotowe. Wyniki są w kontekście rozmowy. Napisz swój ruch albo kliknij „Dalej”.', 'ok');
+}
+const SEARCH_FULL = /^\s*\/search\s*:\s*([\s\S]+)/i;
+const SEARCH_CMD = /^\s*\/(szukaj|wyszukaj)\b/i;
 const SEARCH_NOTE = '\n\n## SEARCH COMMAND (for the narrator only; never quote it)\nThe player\'s last message starts with /szukaj. Use Google Search now to find out what really happens at this point in the source material (the game, series, film or book this story is based on): who the characters in the scene are, why they came, what they want and what canonically happens next. Anything the player wrote after the command is the topic to look up. Then continue the scene faithfully to that source: characters act on their canonical goals and knowledge, not generic guesses. Do not mention searching, the internet, sources or the command. Stay fully in the story. Never skip ahead past the next beat of the scene.';
 
 async function generate() {
