@@ -364,6 +364,7 @@ dialog[open]::backdrop{animation:dlg-fade .25s ease}
     <div class="field"><label for="toneSel">Wulgaryzmy i humor</label><select id="toneSel"><option value="off">Bez przekleństw</option><option value="natural">Naturalnie (przeklinają i żartują)</option><option value="heavy">Ostro (dużo przekleństw)</option></select></div>
     <div class="field"><label for="tempIn">Kreatywność odpowiedzi (0–2)</label><input id="tempIn" type="number" min="0" max="2" step="0.05"><p class="hint">Ok. 0,7 = spójniej. Ok. 1,2 = bardziej zaskakująco.</p></div>
     <div class="field"><label for="thinkSel">Namysł modelu</label><select id="thinkSel"><option value="auto">Domyślny</option><option value="low">Krótki (szybciej)</option><option value="high">Głęboki (logiczniej, wolniej)</option></select><p class="hint">Jeśli model nie obsługuje tej opcji, strona sama ją pominie.</p></div>
+    <p class="hint"><b>Szukanie w internecie:</b> zacznij wiadomość od <b>/szukaj</b> (np. „/szukaj po co Odin przyszedł do Kratosa”). Postać sprawdzi w sieci, co dzieje się w oryginale, i poprowadzi scenę zgodnie z nim.</p>
   </section>
   <section class="card" data-sec="look"><h3>Wygląd</h3>
     <div class="seg" id="themeSeg"><button data-v="light">Jasny</button><button data-v="dark">Ciemny</button><button data-v="auto">Jak telefon</button><button data-v="story">Jak w fabule</button></div>
@@ -1505,9 +1506,9 @@ async function gemFetch(o, method, body, signal) {
   bumpUsage();
   return res;
 }
-async function streamGemini(system, contents, onText) {
+async function streamGemini(system, contents, onText, search) {
   const o = CUR();
-  const res = await gemFetch(o, 'streamGenerateContent', { systemInstruction: { parts: [{ text: system }] }, contents, generationConfig: { temperature: +S.temperature, maxOutputTokens: 4096 }, safetySettings: safetyFor() }, ctl.signal);
+  const res = await gemFetch(o, 'streamGenerateContent', { systemInstruction: { parts: [{ text: system }] }, contents, generationConfig: { temperature: +S.temperature, maxOutputTokens: 4096 }, safetySettings: safetyFor(), ...(search ? { tools: [{ google_search: {} }] } : {}) }, ctl.signal);
   if (!res.ok) throw await apiError(res, o.model);
   const reader = res.body.getReader(), dec = new TextDecoder();
   let buf = '', finish = null, blocked = null;
@@ -1546,12 +1547,17 @@ async function send(text, opts = {}) {
   await generate();
 }
 
+const SEARCH_CMD = /^\s*\/(szukaj|wyszukaj|search)\b/i;
+const SEARCH_NOTE = '\n\n## SEARCH COMMAND (for the narrator only; never quote it)\nThe player\'s last message starts with /szukaj. Use Google Search now to find out what really happens at this point in the source material (the game, series, film or book this story is based on): who the characters in the scene are, why they came, what they want and what canonically happens next. Anything the player wrote after the command is the topic to look up. Then continue the scene faithfully to that source: characters act on their canonical goals and knowledge, not generic guesses. Do not mention searching, the internet, sources or the command. Stay fully in the story. Never skip ahead past the next beat of the scene.';
+
 async function generate() {
   busy = true; ctl = new AbortController(); updateButtons();
   const holder = document.createElement('div');
   const typing = '<span class="typing"><i></i><i></i><i></i></span>';
   holder.innerHTML = typing; log.appendChild(holder); toBottom();
   const sc = A();
+  const lastMsg = S.messages[S.messages.length - 1];
+  const search = !!(lastMsg && lastMsg.role === 'user' && SEARCH_CMD.test(lastMsg.text || ''));
   const terms = sc.kind === 'custom' ? [] : futureTerms(KB, S.point);
   const allowed = S.messages.filter(m => m.role === 'user' && !m.hidden && !m.divider).slice(-4).map(m => m.text).join(' ');
   let acc = '', errMsg = '', extra = '', leaks = [], cleaned = false;
@@ -1559,9 +1565,9 @@ async function generate() {
     for (let attempt = 0; attempt < 2; attempt++) {
       acc = ''; holder.innerHTML = typing;
       const pr = S.kind === 'custom' ? buildCustomParts(S, extra) : buildParts(S, KB, extra, ctxBudget());
-      const { finish, blocked } = await streamGemini(pr.system, withTail(toContents(), pr.tail), t => {
+      const { finish, blocked } = await streamGemini(pr.system, withTail(toContents(), pr.tail + (search ? SEARCH_NOTE : '')), t => {
         const stick = nearBottom(); acc += t; holder.innerHTML = messageHTML(acc); if (stick) toBottom();
-      });
+      }, search);
       const refused = acc.trim().length < 220 && /^(i'?m sorry|sorry, but|i can(?:'|no)t (help|assist|comply|continue)|przepraszam, ale|nie mogę (pomóc|kontynuować))/i.test(acc.trim());
       if (attempt === 0 && (blocked || refused || (!acc.trim() && /^(SAFETY|PROHIBITED_CONTENT|BLOCKLIST|SPII)$/.test(finish || '')))) { extra = 'The previous attempt was stopped by a content filter. Continue the same scene in the same tone, but handle the most graphic moment with implication, a time cut or a change of focus, then keep the story moving. No apology, no warning, no refusal.'; continue; }
       if (blocked) { errMsg = `Dostawca zablokował tę wiadomość (${blocked}). Sformułuj ją inaczej albo zmień poziom treści w scenariuszu.`; break; }
